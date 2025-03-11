@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Tables\Columns\TextColumn;
+use Illuminate\Support\Carbon;
 
 class TimeEntryResource extends Resource
 {
@@ -43,6 +44,12 @@ class TimeEntryResource extends Resource
                 TextColumn::make('employee.name')->label('Employee'),
                 TextColumn::make('clock_in')->label('Clock In'),
                 TextColumn::make('clock_out')->label('Clock Out'),
+                TextColumn::make('total_time')->label('Total Time')
+                    ->getStateUsing(function (TimeEntry $record) {
+                        $clockIn = Carbon::parse($record->clock_in);
+                        $clockOut = Carbon::parse($record->clock_out);
+                        return $clockOut->longAbsoluteDiffForHumans($clockIn);
+                    }),
             ])
             ->filters([
                 //
