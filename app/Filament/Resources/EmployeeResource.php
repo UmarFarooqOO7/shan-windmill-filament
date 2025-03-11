@@ -23,6 +23,8 @@ use Filament\Tables\Columns\BadgeColumn;
 use Illuminate\Support\Carbon;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\ToggleColumn;
+use Filament\Tables\Filters\TernaryFilter;
+use Illuminate\Database\Eloquent\Builder;
 
 class EmployeeResource extends Resource
 {
@@ -70,8 +72,8 @@ class EmployeeResource extends Resource
     {
         return $table
             ->columns([
-                TextColumn::make('name')->label('Name')->wrap(),
-                TextColumn::make('email')->label('Email')->wrap(),
+                TextColumn::make('name')->label('Name')->wrap()->searchable(),
+                TextColumn::make('email')->label('Email')->wrap()->searchable(),
                 TextColumn::make('comp_time')->label('Comp Time')->wrap(),
                 TextColumn::make('vacation_time')->label('Vacation Time')->wrap(),
                 TextColumn::make('sick_time')->label('Sick Time')->wrap(),
@@ -79,8 +81,26 @@ class EmployeeResource extends Resource
                 TextColumn::make('vacation_time_accrual_rate')->label('Vacation Rate')->wrap(),
                 TextColumn::make('sick_time_accrual_rate')->label('Sick Rate')->wrap(),
             ])
+            ->searchPlaceholder('Search (Name, Email)')
             ->filters([
-                //
+                TernaryFilter::make('clocked_in')
+                    ->label('Clock Status')
+                    ->placeholder('All Employees')
+                    ->trueLabel('Clocked In')
+                    ->falseLabel('Clocked Out')
+                    ->queries(
+                        true: fn (Builder $query) => $query->whereHas('timeEntries', function ($query) {
+                            $query->whereNull('clock_out')
+                                ->whereIn('id', function ($subQuery) {
+                                    $subQuery->selectRaw('MAX(id)')
+                                        ->from('time_entries')
+                                        ->groupBy('employee_id');
+                                });
+                        }),
+                        false: fn (Builder $query) => $query->whereDoesntHave('timeEntries', function ($query) {
+                            $query->whereNull('clock_out');
+                        })
+                    )
             ])
             ->defaultSort('created_at', 'desc')
             ->actions([

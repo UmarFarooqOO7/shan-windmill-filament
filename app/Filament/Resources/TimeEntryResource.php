@@ -16,6 +16,9 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Tables\Columns\TextColumn;
 use Illuminate\Support\Carbon;
+use Filament\Tables\Filters\Filter;
+use Filament\Tables\Filters\SelectFilter;
+use Filament\Tables\Filters\TernaryFilter;
 
 class TimeEntryResource extends Resource
 {
@@ -51,11 +54,22 @@ class TimeEntryResource extends Resource
                         return $clockOut->longAbsoluteDiffForHumans($clockIn);
                     }
                     return 'N/A';
-                })
+                }),
             ])
             ->defaultSort('created_at', 'desc')
             ->filters([
-                //
+                SelectFilter::make('employee')
+                    ->relationship('employee', 'name')
+                    ->columnSpan(1),
+                TernaryFilter::make('clock_out')
+                    ->placeholder('All Time Entries')
+                    ->trueLabel('Completed (Clocked out)')
+                    ->falseLabel('Active (Still clocked in)')
+                    ->queries(
+                        true: fn (Builder $query) => $query->whereNotNull('clock_out'),
+                        false: fn (Builder $query) => $query->whereNull('clock_out'),
+                    )
+                    ->columnSpan(1),
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
