@@ -16,4 +16,9 @@ class Employee extends Model
         'vacation_time_accrual_rate',
         'sick_time_accrual_rate',
     ];
+
+    public function timeEntries()
+    {
+        return $this->hasMany(TimeEntry::class);
+    }
 }

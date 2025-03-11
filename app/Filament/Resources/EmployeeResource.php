@@ -3,6 +3,7 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\EmployeeResource\Pages;
+use App\Filament\Resources\EmployeeResource\RelationManagers\TimeEntriesRelationManager;
 use App\Models\Employee;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -87,7 +88,7 @@ class EmployeeResource extends Resource
     public static function getRelations(): array
     {
         return [
-            //
+            TimeEntriesRelationManager::class,
         ];
     }
 
