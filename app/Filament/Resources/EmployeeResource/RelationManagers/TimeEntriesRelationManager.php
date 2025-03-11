@@ -45,7 +45,7 @@ class TimeEntriesRelationManager extends RelationManager
                         return 'N/A';
                     }),
             ])
-            ->defaultSort('clock_in', 'desc')
+            ->defaultSort('created_at', 'desc')
             ->filters([
                 //
             ])

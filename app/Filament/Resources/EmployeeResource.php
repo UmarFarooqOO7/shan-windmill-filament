@@ -81,6 +81,7 @@ class EmployeeResource extends Resource
             ->filters([
                 //
             ])
+            ->defaultSort('created_at', 'desc')
             ->actions([
                 Action::make('clockInOut')
                     ->label(fn (Employee $record) => $record->timeEntries()->whereNull('clock_out')->exists() ? 'Clock Out' : 'Clock In')

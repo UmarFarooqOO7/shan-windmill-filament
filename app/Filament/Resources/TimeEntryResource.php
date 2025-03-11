@@ -53,7 +53,7 @@ class TimeEntryResource extends Resource
                     return 'N/A';
                 })
             ])
-            ->defaultSort('clock_in', 'desc')
+            ->defaultSort('created_at', 'desc')
             ->filters([
                 //
             ])
