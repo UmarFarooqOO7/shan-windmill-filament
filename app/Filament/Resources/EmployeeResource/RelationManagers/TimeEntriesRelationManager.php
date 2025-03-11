@@ -2,11 +2,14 @@
 
 namespace App\Filament\Resources\EmployeeResource\RelationManagers;
 
+use App\Models\TimeEntry;
+use Carbon\Carbon;
 use Filament\Forms;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Form;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables;
+use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
@@ -30,8 +33,14 @@ class TimeEntriesRelationManager extends RelationManager
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('clock_in'),
-                Tables\Columns\TextColumn::make('clock_out'),
+                TextColumn::make('clock_in'),
+                TextColumn::make('clock_out'),
+                TextColumn::make('total_time')->label('Total Time')
+                    ->getStateUsing(function (TimeEntry $record) {
+                        $clockIn = Carbon::parse($record->clock_in);
+                        $clockOut = Carbon::parse($record->clock_out);
+                        return $clockOut->longAbsoluteDiffForHumans($clockIn);
+                    }),
             ])
             ->filters([
                 //
