@@ -41,16 +41,19 @@ class TimeEntryResource extends Resource
     {
         return $table
             ->columns([
-                TextColumn::make('employee.name')->label('Employee'),
-                TextColumn::make('clock_in')->label('Clock In'),
-                TextColumn::make('clock_out')->label('Clock Out'),
-                TextColumn::make('total_time')->label('Total Time')
-                    ->getStateUsing(function (TimeEntry $record) {
-                        $clockIn = Carbon::parse($record->clock_in);
+                TextColumn::make('employee.name')->label('Employee')->sortable(),
+                TextColumn::make('clock_in')->label('Clock In')->sortable(),
+                TextColumn::make('clock_out')->label('Clock Out')->sortable(),
+                TextColumn::make('total_time')->label('Calculated Time')->getStateUsing(function (TimeEntry $record) {
+                    $clockIn = Carbon::parse($record->clock_in);
+                    if ($record->clock_out) {
                         $clockOut = Carbon::parse($record->clock_out);
                         return $clockOut->longAbsoluteDiffForHumans($clockIn);
-                    }),
+                    }
+                    return 'N/A';
+                })
             ])
+            ->defaultSort('clock_in', 'desc')
             ->filters([
                 //
             ])

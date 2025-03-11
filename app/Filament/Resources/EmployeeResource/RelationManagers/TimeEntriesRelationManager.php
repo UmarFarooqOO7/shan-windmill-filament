@@ -33,15 +33,19 @@ class TimeEntriesRelationManager extends RelationManager
     {
         return $table
             ->columns([
-                TextColumn::make('clock_in'),
-                TextColumn::make('clock_out'),
+                TextColumn::make('clock_in')->sortable(),
+                TextColumn::make('clock_out')->sortable(),
                 TextColumn::make('total_time')->label('Total Time')
                     ->getStateUsing(function (TimeEntry $record) {
                         $clockIn = Carbon::parse($record->clock_in);
-                        $clockOut = Carbon::parse($record->clock_out);
-                        return $clockOut->longAbsoluteDiffForHumans($clockIn);
+                        if ($record->clock_out) {
+                            $clockOut = Carbon::parse($record->clock_out);
+                            return $clockOut->longAbsoluteDiffForHumans($clockIn);
+                        }
+                        return 'N/A';
                     }),
             ])
+            ->defaultSort('clock_in', 'desc')
             ->filters([
                 //
             ])
