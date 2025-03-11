@@ -17,6 +17,7 @@ use Filament\Forms\Components\DateTimePicker;
 use App\Models\TimeEntry;
 use Filament\Actions\ReplicateAction;
 use Filament\Notifications\Notification;
+use Filament\Support\Enums\ActionSize;
 use Filament\Tables\Actions\ViewAction;
 use Filament\Tables\Columns\BadgeColumn;
 use Illuminate\Support\Carbon;
@@ -115,6 +116,7 @@ class EmployeeResource extends Resource
                         }
                     })
                     ->button()
+                    ->size(ActionSize::ExtraSmall)
                     ->extraAttributes(['class' => 'me-4']),
                 Tables\Actions\ActionGroup::make([
                     Tables\Actions\EditAction::make(),
