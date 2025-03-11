@@ -12,6 +12,12 @@ use Filament\Tables\Table;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Fieldset;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Actions\Action;
+use Filament\Forms\Components\DateTimePicker;
+use App\Models\TimeEntry;
+use Filament\Notifications\Notification;
+use Filament\Tables\Actions\ViewAction;
+use Filament\Tables\Columns\BadgeColumn;
 
 class EmployeeResource extends Resource
 {
@@ -75,7 +81,27 @@ class EmployeeResource extends Resource
                 Tables\Actions\ActionGroup::make([
                     Tables\Actions\EditAction::make(),
                     Tables\Actions\DeleteAction::make(),
-                    Tables\Actions\ViewAction::make(),
+                    ViewAction::make(),
+                    Action::make('addTime')
+                        ->label('Add Time')
+                        ->icon('heroicon-o-clock')
+                        ->form([
+                            DateTimePicker::make('clock_in')
+                                ->required(),
+                            DateTimePicker::make('clock_out')
+                                ->nullable(),
+                        ])
+                        ->action(function (Employee $record, array $data) {
+                            TimeEntry::create([
+                                'employee_id' => $record->id,
+                                'clock_in' => $data['clock_in'],
+                                'clock_out' => $data['clock_out'],
+                            ]);
+                            Notification::make()
+                                ->title('Time added successfully')
+                                ->success()
+                                ->send();
+                        }),
                 ]),
             ])
             ->bulkActions([
