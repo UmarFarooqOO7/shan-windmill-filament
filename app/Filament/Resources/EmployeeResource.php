@@ -15,9 +15,13 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Actions\Action;
 use Filament\Forms\Components\DateTimePicker;
 use App\Models\TimeEntry;
+use Filament\Actions\ReplicateAction;
 use Filament\Notifications\Notification;
 use Filament\Tables\Actions\ViewAction;
 use Filament\Tables\Columns\BadgeColumn;
+use Illuminate\Support\Carbon;
+use Filament\Tables\Columns\IconColumn;
+use Filament\Tables\Columns\ToggleColumn;
 
 class EmployeeResource extends Resource
 {
@@ -78,6 +82,39 @@ class EmployeeResource extends Resource
                 //
             ])
             ->actions([
+                Action::make('clockInOut')
+                    ->label(fn (Employee $record) => $record->timeEntries()->whereNull('clock_out')->exists() ? 'Clock Out' : 'Clock In')
+                    ->color(fn (Employee $record) => $record->timeEntries()->whereNull('clock_out')->exists() ? 'danger' : 'success')
+                    ->action(function (Employee $record) {
+                        if ($record->timeEntries()->whereNull('clock_out')->exists()) {
+                            $timeEntry = $record->timeEntries()->whereNull('clock_out')->latest()->first();
+                            if ($timeEntry) {
+                                $timeEntry->update([
+                                    'clock_out' => Carbon::now(),
+                                ]);
+                                Notification::make()
+                                    ->title('Clocked out successfully')
+                                    ->success()
+                                    ->send();
+                            } else {
+                                Notification::make()
+                                    ->title('No active clock in found')
+                                    ->danger()
+                                    ->send();
+                            }
+                        } else {
+                            TimeEntry::create([
+                                'employee_id' => $record->id,
+                                'clock_in' => Carbon::now(),
+                            ]);
+                            Notification::make()
+                                ->title('Clocked in successfully')
+                                ->success()
+                                ->send();
+                        }
+                    })
+                    ->button()
+                    ->extraAttributes(['class' => 'me-4']),
                 Tables\Actions\ActionGroup::make([
                     Tables\Actions\EditAction::make(),
                     Tables\Actions\DeleteAction::make(),
@@ -102,7 +139,7 @@ class EmployeeResource extends Resource
                                 ->success()
                                 ->send();
                         }),
-                ]),
+                ])->label('Actions')->tooltip('Click to see more actions'),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
