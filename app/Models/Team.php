@@ -34,27 +34,4 @@ class Team extends Model
     {
         return $this->belongsToMany(Lead::class, 'leads_teams');
     }
-
-    public function scopeForUser(Builder $query, User $user, $type = 'all')
-    {
-        if ($user->role === 'master') {
-            return $query; // Master gets all teams
-        }
-
-        return $query->where(function ($q) use ($user, $type) {
-            if ($type === 'own' || $type === 'all') {
-                // Get teams where the user is a direct member
-                $q->whereHas('members', function ($q) use ($user) {
-                    $q->where('user_id', $user->id);
-                });
-            }
-
-            if ($type === 'parent' || $type === 'all') {
-                // Get parent teams where the user is a member(they are a member of a team that is a parent of this team)
-                $q->orWhereHas('parent.members', function ($q) use ($user) {
-                    $q->where('user_id', $user->id);
-                });
-            }
-        });
-    }
 }
