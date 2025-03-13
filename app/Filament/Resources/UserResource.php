@@ -75,13 +75,13 @@ class UserResource extends Resource
         ];
 
 
-        if (config('filament-users.shield') && class_exists(\BezhanSalleh\FilamentShield\FilamentShield::class)) {
-            $rows[] = Forms\Components\Select::make('roles')
-                ->multiple()
-                ->preload()
-                ->relationship('roles', 'name')
-                ->label(trans('filament-users::user.resource.roles'));
-        }
+        // if (config('filament-users.shield') && class_exists(\BezhanSalleh\FilamentShield\FilamentShield::class)) {
+        //     $rows[] = Forms\Components\Select::make('roles')
+        //         ->multiple()
+        //         ->preload()
+        //         ->relationship('roles', 'name')
+        //         ->label(trans('filament-users::user.resource.roles'));
+        // }
 
         $form->schema($rows);
 
@@ -90,9 +90,9 @@ class UserResource extends Resource
 
     public static function table(Table $table): Table
     {
-        if(class_exists( STS\FilamentImpersonate\Tables\Actions\Impersonate::class) && config('filament-users.impersonate')){
-            $table->actions([Impersonate::make('impersonate')]);
-        }
+        // if(class_exists( STS\FilamentImpersonate\Tables\Actions\Impersonate::class) && config('filament-users.impersonate')){
+        //     $table->actions([Impersonate::make('impersonate')]);
+        // }
         $table
             ->columns([
                 TextColumn::make('id')
