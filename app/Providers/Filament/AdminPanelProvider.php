@@ -10,6 +10,7 @@ use Filament\Pages;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
+use Filament\Support\Enums\MaxWidth;
 use Filament\Widgets;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
@@ -30,9 +31,12 @@ class AdminPanelProvider extends PanelProvider
             ->registration()
             ->Profile(isSimple:false)
             ->colors([
-                'primary' => Color::Slate,
+                'primary' => Color::Lime,
             ])
-            ->sidebarWidth('16rem')
+            ->spa()
+            ->sidebarCollapsibleOnDesktop()
+            ->sidebarWidth('14rem')
+            ->maxContentWidth(MaxWidth::Full)
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\\Filament\\Pages')
             ->pages([
