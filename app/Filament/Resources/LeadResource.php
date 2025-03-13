@@ -15,12 +15,40 @@ use Filament\Tables\Actions\DeleteAction;
 use Filament\Tables\Actions\EditAction;
 use Filament\Tables\Actions\ViewAction;
 use Filament\Tables\Enums\ActionsPosition;
+use Filament\Facades\Filament;
+use Illuminate\Database\Eloquent\Builder;
 
 class LeadResource extends Resource
 {
     protected static ?string $model = Lead::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+
+    public static function getEloquentQuery(): Builder
+    {
+        $query = parent::getEloquentQuery();
+
+        $user = Filament::auth()->user();
+        // Users only see leads from their teams and their teams' child teams unless they are an admin
+        if (!$user || !$user->is_admin) {
+            $userTeamIds = $user->teams->pluck('id')->toArray();
+
+            // Get all child teams of user's teams
+            $childTeamIds = [];
+            foreach ($user->teams as $team) {
+                $childTeamIds = array_merge($childTeamIds, $team->subTeams->pluck('id')->toArray());
+            }
+
+            // Combine user's direct teams and their child teams
+            $allTeamIds = array_unique(array_merge($userTeamIds, $childTeamIds));
+
+            return $query->whereHas('teams', function ($query) use ($allTeamIds) {
+                $query->whereIn('teams.id', $allTeamIds);
+            });
+        }
+
+        return $query;
+    }
 
     public static function form(Form $form): Form
     {
