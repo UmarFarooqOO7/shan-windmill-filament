@@ -30,7 +30,7 @@ class AdminPanelProvider extends PanelProvider
             ->registration()
             ->Profile(isSimple:false)
             ->colors([
-                'primary' => Color::Green,
+                'primary' => Color::Slate,
             ])
             ->sidebarWidth('16rem')
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
