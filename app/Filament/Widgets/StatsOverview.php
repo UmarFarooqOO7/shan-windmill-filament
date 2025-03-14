@@ -6,13 +6,17 @@ use App\Models\User;
 use App\Models\Team;
 use App\Models\Lead;
 use App\Models\LeadAmount;
+use App\Traits\HasTeamScope;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 use Carbon\Carbon;
+use Filament\Facades\Filament;
 use Illuminate\Support\Facades\DB;
 
 class StatsOverview extends BaseWidget
 {
+    use HasTeamScope;
+
     protected function getHeading(): ?string
     {
         return 'Overview';
@@ -25,105 +29,118 @@ class StatsOverview extends BaseWidget
 
     protected function getStats(): array
     {
-        // Get data for the last 7 days
-        $usersLastWeek = collect(range(6, 0))->map(function ($days) {
-            return User::whereDate('created_at', Carbon::now()->subDays($days))->count();
+        $user = Filament::auth()->user();
+        $isAdmin = $user?->is_admin ?? false;
+
+        // Get data for leads in user's teams
+        $leadQuery = Lead::query();
+        $leadQuery = $this->applyTeamScope($leadQuery);
+
+        // Initialize stats array
+        $stats = [];
+
+        // Admin-only statistics
+        if ($isAdmin) {
+            $teamsLastWeek = collect(range(6, 0))->map(function ($days) {
+                return Team::whereDate('created_at', Carbon::now()->subDays($days))->count();
+            })->toArray();
+
+            $usersLastWeek = collect(range(6, 0))->map(function ($days) {
+                return User::whereDate('created_at', Carbon::now()->subDays($days))->count();
+            })->toArray();
+
+            $stats[] = Stat::make('Total Users', User::count())
+                ->description(User::whereDate('created_at', Carbon::today())->count() . ' today')
+                ->descriptionIcon('heroicon-m-user')
+                ->chart($usersLastWeek)
+                ->color('info');
+
+            $stats[] = Stat::make('Total Teams', Team::count())
+                ->description(Team::whereDate('created_at', Carbon::today())->count() . ' today')
+                ->descriptionIcon('heroicon-m-user-group')
+                ->chart($teamsLastWeek)
+                ->color('primary');
+        }
+
+        // Get leads data for last 7 days for chart
+        $leadsLastWeek = collect(range(6, 0))->map(function ($days) use ($leadQuery) {
+            return $leadQuery->clone()
+                ->whereDate('created_at', Carbon::now()->subDays($days))
+                ->count();
         })->toArray();
 
-        $teamsLastWeek = collect(range(6, 0))->map(function ($days) {
-            return Team::whereDate('created_at', Carbon::now()->subDays($days))->count();
-        })->toArray();
-
-        $leadsLastWeek = collect(range(6, 0))->map(function ($days) {
-            return Lead::whereDate('created_at', Carbon::now()->subDays($days))->count();
-        })->toArray();
-
-        // Get cleared amounts for each day in the last 7 days using payment_date or created_at as fallback
-        $clearedAmountsLastWeek = collect(range(6, 0))->map(function ($days) {
+        // Get cleared amounts for last 7 days
+        $clearedAmountsLastWeek = collect(range(6, 0))->map(function ($days) use ($leadQuery) {
             $date = Carbon::now()->subDays($days)->format('Y-m-d');
             return DB::table('lead_amounts')
-                ->where(function ($query) use ($date) {
-                    $query->whereDate('payment_date', $date)
-                        ->orWhere(function ($q) use ($date) {
-                            $q->whereNull('payment_date')
-                               ->whereDate('created_at', $date);
-                        });
-                })
+                ->whereIn('lead_id', $leadQuery->pluck('id'))
+                ->whereDate('payment_date', $date)
                 ->sum('amount_cleared');
         })->toArray();
 
-        $owedAmountsLastWeek = collect(range(6, 0))->map(function ($days) {
-            return Lead::whereDate('created_at', Carbon::now()->subDays($days))
+        // Get owed amounts for last 7 days
+        $owedAmountsLastWeek = collect(range(6, 0))->map(function ($days) use ($leadQuery) {
+            $date = Carbon::now()->subDays($days);
+            return $leadQuery->clone()
+                ->whereDate('created_at', $date)
                 ->sum('amount_owed');
         })->toArray();
 
-        // Calculate remaining amounts using the lead_amounts payment_date
-        $remainingAmountsLastWeek = collect(range(6, 0))->map(function ($days) {
+        // Calculate remaining amounts for last 7 days
+        $remainingAmountsLastWeek = collect(range(6, 0))->map(function ($days) use ($leadQuery) {
             $date = Carbon::now()->subDays($days);
-
-            return DB::table('leads')
-                ->leftJoin('lead_amounts', 'leads.id', '=', 'lead_amounts.lead_id')
-                ->where(function ($query) use ($date) {
-                    $query->whereNull('lead_amounts.payment_date')
-                        ->orWhereDate('lead_amounts.payment_date', '<=', $date);
-                })
-                ->selectRaw('SUM(leads.amount_owed) - COALESCE(SUM(lead_amounts.amount_cleared), 0) as remaining_amount')
-                ->value('remaining_amount') ?? 0;
+            $owed = $leadQuery->clone()
+                ->whereDate('created_at', '<=', $date)
+                ->sum('amount_owed');
+            $cleared = LeadAmount::whereIn('lead_id', $leadQuery->pluck('id'))
+                ->whereDate('payment_date', '<=', $date)
+                ->sum('amount_cleared');
+            return $owed - $cleared;
         })->toArray();
 
-        // Calculate total remaining amount
-        $totalRemaining = DB::table('leads')
-            ->leftJoin('lead_amounts', 'leads.id', '=', 'lead_amounts.lead_id')
-            ->selectRaw('SUM(leads.amount_owed) - COALESCE(SUM(lead_amounts.amount_cleared), 0) as remaining_amount')
-            ->value('remaining_amount') ?? 0;
+        // Calculate totals
+        $totalOwed = $leadQuery->sum('amount_owed');
+        $totalCleared = LeadAmount::whereIn('lead_id', $leadQuery->pluck('id'))->sum('amount_cleared');
+        $totalRemaining = $totalOwed - $totalCleared;
 
-        // Get today's cleared amount using payment_date or created_at as fallback
-        $todayClearedAmount = DB::table('lead_amounts')
-            ->where(function ($query) {
-                $query->whereDate('payment_date', Carbon::today())
-                    ->orWhere(function ($q) {
-                        $q->whereNull('payment_date')
-                           ->whereDate('created_at', Carbon::today());
-                    });
-            })
+        // Get today's amounts
+        $todayOwed = $leadQuery->clone()
+            ->whereDate('created_at', Carbon::today())
+            ->sum('amount_owed');
+
+        $todayCleared = LeadAmount::whereIn('lead_id', $leadQuery->pluck('id'))
+            ->whereDate('payment_date', Carbon::today())
             ->sum('amount_cleared');
 
-        return [
-            Stat::make('Total Users', User::count())
-                ->description(User::whereDate('created_at', Carbon::today())->count() . ' today')
-                ->descriptionIcon('heroicon-m-arrow-trending-up')
-                ->chart($usersLastWeek)
-                ->color('success'),
+        $todayRemaining = $todayOwed - $todayCleared;
 
-            Stat::make('Total Teams', Team::count())
-                ->description(Team::whereDate('created_at', Carbon::today())->count() . ' today')
-                ->descriptionIcon('heroicon-m-arrow-trending-up')
-                ->chart($teamsLastWeek)
-                ->color('info'),
-
-            Stat::make('Total Leads', Lead::count())
-                ->description(Lead::whereDate('created_at', Carbon::today())->count() . ' today')
-                ->descriptionIcon('heroicon-m-arrow-trending-up')
+        // Add common stats for all users
+        $stats = array_merge($stats, [
+            Stat::make('Total Leads', $leadQuery->count())
+                ->description($leadQuery->whereDate('created_at', Carbon::today())->count() . ' today')
+                ->descriptionIcon('heroicon-m-briefcase')
                 ->chart($leadsLastWeek)
                 ->color('warning'),
 
-            Stat::make('Total Amount Cleared', '$' . number_format(LeadAmount::sum('amount_cleared'), 2))
-                ->description('$' . number_format($todayClearedAmount, 2) . ' today')
+            Stat::make('Total Amount Cleared', '$' . number_format($totalCleared, 2))
+                ->description('$' . number_format($todayCleared, 2) . ' today')
                 ->descriptionIcon('heroicon-m-currency-dollar')
                 ->chart($clearedAmountsLastWeek)
                 ->color('success'),
 
-            Stat::make('Total Amount Owed', '$' . number_format(Lead::sum('amount_owed'), 2))
-                ->description('$' . number_format(Lead::whereDate('created_at', Carbon::today())->sum('amount_owed'), 2) . ' today')
+            Stat::make('Total Amount Owed', '$' . number_format($totalOwed, 2))
+                ->description('$' . number_format($todayOwed, 2) . ' today')
                 ->descriptionIcon('heroicon-m-currency-dollar')
                 ->chart($owedAmountsLastWeek)
                 ->color('danger'),
 
             Stat::make('Remaining Amount', '$' . number_format($totalRemaining, 2))
-                ->description('$' . number_format($todayClearedAmount, 2) . ' cleared today')
+                ->description('$' . number_format($todayRemaining, 2) . ' remaining today')
                 ->descriptionIcon('heroicon-m-calculator')
                 ->chart($remainingAmountsLastWeek)
                 ->color('warning'),
-        ];
+        ]);
+
+        return $stats;
     }
 }

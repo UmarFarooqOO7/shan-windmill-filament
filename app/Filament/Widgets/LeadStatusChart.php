@@ -4,18 +4,25 @@ namespace App\Filament\Widgets;
 
 use App\Models\Lead;
 use App\Models\Status;
+use App\Traits\HasTeamScope;
 use Filament\Widgets\ChartWidget;
 use Illuminate\Support\Facades\DB;
 
 class LeadStatusChart extends ChartWidget
 {
+    use HasTeamScope;
+
     protected static ?string $heading = 'Leads by Status';
 
     protected static ?int $sort = 2;
 
     protected function getData(): array
     {
-        $data = Lead::select('status', DB::raw('count(*) as count'))
+        // Get base query for user's leads
+        $leadQuery = Lead::query();
+        $leadQuery = $this->applyTeamScope($leadQuery);
+
+        $data = $leadQuery->select('status', DB::raw('count(*) as count'))
             ->groupBy('status')
             ->get()
             ->mapWithKeys(fn ($item) => [$item->status => $item->count])
