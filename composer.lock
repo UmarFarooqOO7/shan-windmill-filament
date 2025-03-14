@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "c3712fab53ec7623dc03f3771cf7406b",
+    "content-hash": "fc6b050c6f977ad0fab459b0c64b83f4",
     "packages": [
         {
             "name": "anourvalar/eloquent-serialize",
@@ -3801,6 +3801,78 @@
                 }
             ],
             "time": "2025-03-06T09:59:55+00:00"
+        },
+        {
+            "name": "oriondevelops/filament-greeter",
+            "version": "v0.2.2",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/oriondevelops/filament-greeter.git",
+                "reference": "abe290f0fc977cfa9eb9a83bd2cc566182c545da"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/oriondevelops/filament-greeter/zipball/abe290f0fc977cfa9eb9a83bd2cc566182c545da",
+                "reference": "abe290f0fc977cfa9eb9a83bd2cc566182c545da",
+                "shasum": ""
+            },
+            "require": {
+                "filament/filament": "^3.0",
+                "php": "^8.1",
+                "spatie/laravel-package-tools": "^1.15.0"
+            },
+            "require-dev": {
+                "laravel/pint": "^1.0",
+                "nunomaduro/collision": "^7.9",
+                "orchestra/testbench": "^8.0",
+                "pestphp/pest": "^2.1",
+                "pestphp/pest-plugin-arch": "^2.0",
+                "pestphp/pest-plugin-laravel": "^2.0"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "Orion\\FilamentGreeter\\GreeterPluginServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Orion\\FilamentGreeter\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Mücahit Uğur",
+                    "email": "oriondevelops@gmail.com",
+                    "role": "Developer"
+                }
+            ],
+            "description": "A Filament plugin to greet your users.",
+            "homepage": "https://github.com/oriondevelops/filament-greeter",
+            "keywords": [
+                "filament",
+                "greeter",
+                "laravel",
+                "oriondevelops",
+                "widget"
+            ],
+            "support": {
+                "issues": "https://github.com/oriondevelops/filament-greeter/issues",
+                "source": "https://github.com/oriondevelops/filament-greeter"
+            },
+            "funding": [
+                {
+                    "url": "https://github.com/oriondevelops",
+                    "type": "github"
+                }
+            ],
+            "time": "2025-01-28T17:05:50+00:00"
         },
         {
             "name": "phpoption/phpoption",
