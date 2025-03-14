@@ -13,8 +13,6 @@ use Illuminate\Support\Facades\DB;
 
 class StatsOverview extends BaseWidget
 {
-    protected static ?string $pollingInterval = null;
-
     protected function getHeading(): ?string
     {
         return 'Overview';
