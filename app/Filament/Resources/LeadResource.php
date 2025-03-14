@@ -22,7 +22,7 @@ class LeadResource extends Resource
 {
     protected static ?string $model = Lead::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static ?string $navigationIcon = 'heroicon-o-briefcase';
 
     // Group with Leads management
     protected static ?string $navigationGroup = 'Lead Management';
@@ -167,7 +167,7 @@ class LeadResource extends Resource
                                                     ->numeric()
                                                     ->prefix('$')
                                                     ->required(),
-                                                Forms\Components\DateTimePicker::make('created_at')
+                                                Forms\Components\DatePicker::make('payment_date')
                                                     ->label('Payment Date')
                                                     ->required()
                                                     ->default(now()),

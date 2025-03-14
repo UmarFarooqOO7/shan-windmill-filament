@@ -60,13 +60,6 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->authMiddleware([
                 Authenticate::class,
-            ])
-            ->plugins([
-                GreeterPlugin::make()
-                    ->title(text: fn() => Filament::auth()->user()->name)
-                    ->timeSensitive(morningStart: 6, afternoonStart: 12, eveningStart: 18, nightStart: 0)
-                    ->sort(-1)
-                    ->columnSpan('half'),
             ]);
     }
 }
