@@ -14,7 +14,6 @@ class Lead extends Model
 
 
     protected $fillable = [
-        'rid',
         'plaintiff',
         'defendant_first_name',
         'defendant_last_name',

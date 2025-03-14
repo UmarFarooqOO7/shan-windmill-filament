@@ -24,6 +24,9 @@ class LeadResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
 
+    // Group with Leads management
+    protected static ?string $navigationGroup = 'Lead Management';
+
     public static function getEloquentQuery(): Builder
     {
         $query = parent::getEloquentQuery();
@@ -210,7 +213,7 @@ class LeadResource extends Resource
                     ->toggleable(),
                 Tables\Columns\TextColumn::make('defendant_first_name')
                     ->label('Tenant')
-                    ->formatStateUsing(fn ($record) => $record->defendant_first_name . ' ' . $record->defendant_last_name)
+                    ->formatStateUsing(fn($record) => $record->defendant_first_name . ' ' . $record->defendant_last_name)
                     ->searchable(['defendant_first_name', 'defendant_last_name'])
                     ->sortable()
                     ->toggleable(),
@@ -313,32 +316,32 @@ class LeadResource extends Resource
                     ->preload()
                     ->label('REF'),
                 Tables\Filters\SelectFilter::make('status')
-                    ->options(fn () => Status::where('type', 'lead')->pluck('name', 'name'))
+                    ->options(fn() => Status::where('type', 'lead')->pluck('name', 'name'))
                     ->multiple()
                     ->preload(),
                 Tables\Filters\SelectFilter::make('county')
-                    ->options(fn () => Lead::distinct()->pluck('county', 'county')->filter()->sort())
+                    ->options(fn() => Lead::distinct()->pluck('county', 'county')->filter()->sort())
                     ->multiple()
                     ->preload(),
                 Tables\Filters\SelectFilter::make('city')
-                    ->options(fn () => Lead::distinct()->pluck('city', 'city')->filter()->sort())
+                    ->options(fn() => Lead::distinct()->pluck('city', 'city')->filter()->sort())
                     ->multiple()
                     ->preload(),
                 Tables\Filters\SelectFilter::make('state')
-                    ->options(fn () => Lead::distinct()->pluck('state', 'state')->filter()->sort())
+                    ->options(fn() => Lead::distinct()->pluck('state', 'state')->filter()->sort())
                     ->multiple()
                     ->preload(),
                 Tables\Filters\SelectFilter::make('writ')
-                    ->options(fn () => Status::where('type', 'writ')->pluck('name', 'name'))
+                    ->options(fn() => Status::where('type', 'writ')->pluck('name', 'name'))
                     ->multiple()
                     ->preload(),
                 Tables\Filters\SelectFilter::make('setout')
-                    ->options(fn () => Status::where('type', 'setout')->pluck('name', 'name'))
+                    ->options(fn() => Status::where('type', 'setout')->pluck('name', 'name'))
                     ->multiple()
                     ->preload(),
                 Tables\Filters\Filter::make('has_notes')
                     ->label('Has Notes')
-                    ->query(fn ($query) => $query->whereNotNull('notes')->where('notes', '!=', ''))
+                    ->query(fn($query) => $query->whereNotNull('notes')->where('notes', '!=', ''))
                     ->toggle(),
             ])
             ->filtersFormColumns(3)
