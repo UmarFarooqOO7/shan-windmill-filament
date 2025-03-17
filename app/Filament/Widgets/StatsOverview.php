@@ -112,8 +112,6 @@ class StatsOverview extends BaseWidget
             ->whereDate('payment_date', Carbon::today())
             ->sum('amount_cleared');
 
-        $todayRemaining = $todayOwed - $todayCleared;
-
         // Add common stats for all users
         $stats = array_merge($stats, [
             Stat::make('Total Leads', $leadQuery->count())
@@ -135,7 +133,6 @@ class StatsOverview extends BaseWidget
                 ->color('danger'),
 
             Stat::make('Remaining Amount', '$' . number_format($totalRemaining, 2))
-                ->description('$' . number_format($todayRemaining, 2) . ' remaining today')
                 ->descriptionIcon('heroicon-m-calculator')
                 ->chart($remainingAmountsLastWeek)
                 ->color('warning'),
