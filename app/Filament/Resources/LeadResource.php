@@ -5,6 +5,7 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\LeadResource\Pages;
 use App\Models\Lead;
 use App\Models\Status;
+use App\Traits\HasTeamScope;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -20,6 +21,9 @@ use Illuminate\Database\Eloquent\Builder;
 
 class LeadResource extends Resource
 {
+
+    use HasTeamScope;
+
     protected static ?string $model = Lead::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-briefcase';
@@ -29,25 +33,12 @@ class LeadResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        $query = parent::getEloquentQuery();
-
+        $query = parent::getEloquentQuery()->withTeamNames();
         $user = Filament::auth()->user();
-        // Users only see leads from their teams and their teams' child teams unless they are an admin
+
+        // Use the applyTeamScope method from the HasTeamScope trait
         if (!$user || !$user->is_admin) {
-            $userTeamIds = $user->teams->pluck('id')->toArray();
-
-            // Get all child teams of user's teams
-            $childTeamIds = [];
-            foreach ($user->teams as $team) {
-                $childTeamIds = array_merge($childTeamIds, $team->subTeams->pluck('id')->toArray());
-            }
-
-            // Combine user's direct teams and their child teams
-            $allTeamIds = array_unique(array_merge($userTeamIds, $childTeamIds));
-
-            return $query->whereHas('teams', function ($query) use ($allTeamIds) {
-                $query->whereIn('teams.id', $allTeamIds);
-            });
+            return (new static)->applyTeamScope($query);
         }
 
         return $query;
@@ -204,8 +195,12 @@ class LeadResource extends Resource
                     ->label('REF')
                     ->listWithLineBreaks()
                     ->searchable()
-                    ->sortable()
-                    ->toggleable(),
+                    ->sortable(query: function (Builder $query, string $direction): Builder {
+                        return $query->orderBy('sortable_team_names', $direction);
+                    })
+                    ->getStateUsing(function ($record) {
+                        return $record->teams->pluck('name')->join(', ');
+                    }),
                 Tables\Columns\TextColumn::make('plaintiff')
                     ->label('Plaintiff')
                     ->searchable()
