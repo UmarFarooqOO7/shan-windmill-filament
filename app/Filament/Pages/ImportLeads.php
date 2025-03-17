@@ -4,6 +4,7 @@ namespace App\Filament\Pages;
 
 use App\Models\Lead;
 use App\Models\Team;
+use App\Models\Status;
 use Filament\Pages\Page;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -129,9 +130,9 @@ class ImportLeads extends Page
                 // Cache team names to IDs for faster lookups
                 $teamsCache = Team::pluck('id', 'name')->toArray();
                 // Cache status names for faster lookups
-                $leadStatusesCache = \App\Models\Status::where('type', 'lead')->pluck('id', 'name')->toArray();
-                $setoutStatusesCache = \App\Models\Status::where('type', 'setout')->pluck('id', 'name')->toArray();
-                $writStatusesCache = \App\Models\Status::where('type', 'writ')->pluck('id', 'name')->toArray();
+                $leadStatusesCache = Status::where('type', 'lead')->pluck('id', 'name')->toArray();
+                $setoutStatusesCache = Status::where('type', 'setout')->pluck('id', 'name')->toArray();
+                $writStatusesCache = Status::where('type', 'writ')->pluck('id', 'name')->toArray();
 
                 $successCount = 0;
                 $errorCount = 0;
@@ -166,57 +167,49 @@ class ImportLeads extends Page
                             $teamNamesRaw = $rowData[$teamFieldIndex];
                         }
 
+                        // Process status fields first
+                        $statusFields = [
+                            'status' => ['type' => 'lead', 'cache' => &$leadStatusesCache],
+                            'setout' => ['type' => 'setout', 'cache' => &$setoutStatusesCache],
+                            'writ' => ['type' => 'writ', 'cache' => &$writStatusesCache],
+                        ];
+
+                        foreach ($statusFields as $field => $config) {
+                            $fieldIndex = array_search($field, $header);
+                            if ($fieldIndex !== false && isset($rowData[$fieldIndex]) && !empty($rowData[$fieldIndex])) {
+                                $statusName = trim($rowData[$fieldIndex]);
+                                if (!isset($config['cache'][$statusName])) {
+                                    try {
+                                        $status = Status::firstOrCreate([
+                                            'name' => $statusName,
+                                            'type' => $config['type']
+                                        ]);
+                                        if ($status->wasRecentlyCreated) {
+                                            $createdStatuses++;
+                                        }
+                                        $config['cache'][$statusName] = $status->id;
+                                    } catch (\Exception $e) {
+                                        Log::warning("Failed to create status", [
+                                            'status' => $statusName,
+                                            'type' => $config['type'],
+                                            'error' => $e->getMessage()
+                                        ]);
+                                        continue;
+                                    }
+                                }
+                                $leadData[$field . '_id'] = $config['cache'][$statusName];
+                            }
+                        }
+
                         // Map CSV data to Lead model attributes
                         foreach ($header as $index => $columnName) {
-                            if (!isset($rowData[$index]) || $index === $teamFieldIndex) {
+                            if (!isset($rowData[$index]) || $index === $teamFieldIndex || in_array($columnName, array_keys($statusFields))) {
                                 continue;
                             }
 
                             $value = $rowData[$index] !== '' ? $rowData[$index] : null;
 
                             if (in_array($columnName, $leadColumns)) {
-                                // Check if this is a status field and convert name to ID
-                                if ($value && in_array($columnName, ['status', 'setout', 'writ'])) {
-                                    // Determine status type and cache based on column name
-                                    $statusType = $columnName === 'status' ? 'lead' : ($columnName === 'setout' ? 'setout' : 'writ');
-                                    $statusCache = $statusType === 'lead' ? $leadStatusesCache :
-                                                 ($statusType === 'setout' ? $setoutStatusesCache : $writStatusesCache);
-
-                                    // Check if status exists, if not create it
-                                    if (!isset($statusCache[$value])) {
-                                        try {
-                                            $status = \App\Models\Status::firstOrCreate([
-                                                'name' => $value,
-                                                'type' => $statusType
-                                            ]);
-
-                                            if ($status->wasRecentlyCreated) {
-                                                $createdStatuses++;
-
-                                                // Update cache
-                                                if ($statusType === 'lead') {
-                                                    $leadStatusesCache[$value] = $status->id;
-                                                } elseif ($statusType === 'setout') {
-                                                    $setoutStatusesCache[$value] = $status->id;
-                                                } else {
-                                                    $writStatusesCache[$value] = $status->id;
-                                                }
-                                            }
-                                        } catch (\Exception $e) {
-                                            Log::warning("Failed to create status", [
-                                                'status' => $value,
-                                                'type' => $statusType,
-                                                'error' => $e->getMessage()
-                                            ]);
-                                            continue;
-                                        }
-                                    }
-
-                                    // Store the status ID instead of name
-                                    $leadData[$columnName . '_id'] = $statusCache[$value];
-                                    continue;
-                                }
-
                                 $leadData[$columnName] = $value;
                             }
                         }
