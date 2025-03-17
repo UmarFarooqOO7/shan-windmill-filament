@@ -40,23 +40,6 @@ class Lead extends Model
         'amount_owed'
     ];
 
-    // Add a computed property for sorting by team names
-    public function getSortableTeamNamesAttribute()
-    {
-        return $this->teams->pluck('name')->sort()->join(',');
-    }
-
-    // Add a scope to join team names for sorting
-    public function scopeWithTeamNames(Builder $query): Builder
-    {
-        return $query->addSelect(['sortable_team_names' => function($query) {
-            $query->selectRaw('GROUP_CONCAT(teams.name ORDER BY teams.name ASC SEPARATOR \',\')')
-                ->from('teams')
-                ->join('leads_teams', 'teams.id', '=', 'leads_teams.team_id')
-                ->whereColumn('leads.id', 'leads_teams.lead_id');
-        }]);
-    }
-
     public function leadAmounts()
     {
         return $this->hasMany(LeadAmount::class);

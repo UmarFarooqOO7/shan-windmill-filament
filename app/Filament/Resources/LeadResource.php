@@ -33,7 +33,7 @@ class LeadResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        $query = parent::getEloquentQuery()->withTeamNames();
+        $query = parent::getEloquentQuery();
         $user = Filament::auth()->user();
 
         // Use the applyTeamScope method from the HasTeamScope trait
@@ -195,9 +195,6 @@ class LeadResource extends Resource
                     ->label('REF')
                     ->listWithLineBreaks()
                     ->searchable()
-                    ->sortable(query: function (Builder $query, string $direction): Builder {
-                        return $query->orderBy('sortable_team_names', $direction);
-                    })
                     ->getStateUsing(function ($record) {
                         return $record->teams->pluck('name')->join(', ');
                     }),
