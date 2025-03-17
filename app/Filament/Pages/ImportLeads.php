@@ -132,18 +132,26 @@ class ImportLeads extends Page
                 $errorCount = 0;
                 $createdTeams = 0;
                 $errors = [];
+                $rowNumber = 1; // Header row is 0, first data row is 1
 
                 // Use transaction for data integrity
                 DB::beginTransaction();
                 try {
                     // Process each data row
                     while (($rowData = fgetcsv($handle, 1000, ',')) !== false) {
+                        $rowNumber++; // Increment row counter (starting at 2 since row 1 is header)
                         $leadData = [];
                         $teamNamesRaw = null;
 
                         // Skip rows with insufficient data
                         if (count($rowData) < count($header)) {
                             $errorCount++;
+                            $errors[] = [
+                                'row' => $rowNumber,
+                                'data' => $rowData,
+                                'error' => 'Row has fewer columns than header',
+                                'details' => 'Expected ' . count($header) . ' columns, got ' . count($rowData)
+                            ];
                             continue;
                         }
 
@@ -204,13 +212,26 @@ class ImportLeads extends Page
                             unset($lead);
                         } catch (\Exception $e) {
                             $errorCount++;
-                            $errors[] = $e->getMessage();
+                            $errors[] = [
+                                'row' => $rowNumber,
+                                'data' => $rowData,
+                                'lead_data' => $leadData,
+                                'error' => $e->getMessage(),
+                                'code' => $e->getCode()
+                            ];
                         }
                     }
 
                     // Commit transaction, clean up and notify user
                     DB::commit();
                     fclose($handle);
+
+                    // Export error details to CSV if there were errors
+                    $errorFilePath = null;
+                    if ($errorCount > 0) {
+                        $errorFilePath = $this->exportErrorsToCSV($errors, $header);
+                    }
+
                     Storage::disk('public')->delete($this->form->getState()['csv_file']);
 
                     // Build success message
@@ -219,7 +240,7 @@ class ImportLeads extends Page
                         $successMessage .= ", created {$createdTeams} new teams";
                     }
                     if ($errorCount > 0) {
-                        $successMessage .= " with {$errorCount} errors";
+                        $successMessage .= " with {$errorCount} errors. See error log for details.";
                     }
 
                     // Log import results
@@ -230,11 +251,22 @@ class ImportLeads extends Page
                         'errors' => $errors
                     ]);
 
-                    Notification::make()
+                    $notification = Notification::make()
                         ->title('Import Complete')
                         ->body($successMessage)
-                        ->success()
-                        ->send();
+                        ->success();
+
+                    // Add download link if there were errors
+                    if ($errorCount > 0 && $errorFilePath) {
+                        $notification->actions([
+                            \Filament\Notifications\Actions\Action::make('download_errors')
+                                ->label('Download Error Report')
+                                ->url(Storage::url($errorFilePath))
+                                ->openUrlInNewTab(),
+                        ]);
+                    }
+
+                    $notification->send();
 
                 } catch (\Exception $e) {
                     // Rollback transaction on error
@@ -265,5 +297,48 @@ class ImportLeads extends Page
         // Reset form after import
         $this->csv_file = null;
         $this->form->fill([]);
+    }
+
+    /**
+     * Export error details to a downloadable CSV file
+     *
+     * @param array $errors The array of error data
+     * @param array $header The original CSV header
+     * @return string The path to the generated error CSV file
+     */
+    private function exportErrorsToCSV(array $errors, array $header): string
+    {
+        $timestamp = now()->format('Y-m-d_H-i-s');
+        $filename = "import-errors-{$timestamp}.csv";
+        $filePath = "error-reports/{$filename}";
+
+        // Create the directory if it doesn't exist
+        if (!Storage::disk('public')->exists('error-reports')) {
+            Storage::disk('public')->makeDirectory('error-reports');
+        }
+
+        // Create CSV file with error details
+        $handle = fopen(Storage::disk('public')->path($filePath), 'w');
+
+        // Write header row with reordered columns (Raw Error right after Error Message)
+        fputcsv($handle, array_merge(
+            ['Row Number', 'Error Message', 'Raw Error'],
+            $header
+        ));
+
+        // Write error data with reordered columns
+        foreach ($errors as $error) {
+            $rowData = $error['data'] ?? [];
+            $rowData = array_pad($rowData, count($header), ''); // Ensure consistent columns
+
+            fputcsv($handle, array_merge(
+                [$error['row'], $error['error'], $error['details'] ?? ''],
+                $rowData
+            ));
+        }
+
+        fclose($handle);
+
+        return $filePath;
     }
 }
