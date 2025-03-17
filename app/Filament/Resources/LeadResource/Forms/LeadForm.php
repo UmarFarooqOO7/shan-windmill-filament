@@ -151,9 +151,10 @@ class LeadForm
                                         ->columnSpanFull()
                                         ->addActionLabel('Add Payment')
                                         ->label('Payments')
+                                        ->grid(2),
                                 ])
                                 ->visible($isAdmin)
-                                ->columnSpanFull(),
+
                         ]),
 
                     Forms\Components\Tabs\Tab::make('Additional Info')
