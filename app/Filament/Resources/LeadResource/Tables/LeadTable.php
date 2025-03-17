@@ -74,18 +74,20 @@ class LeadTable
                     ->searchable()
                     ->sortable()
                     ->toggleable(),
-                Tables\Columns\TextColumn::make('status')
+                Tables\Columns\TextColumn::make('status.name')
                     ->label('Status')
                     ->searchable()
                     ->sortable()
-                    ->badge()
-                    ->color(fn (string $state): string => match ($state) {
-                        'Pending' => 'gray',
-                        'Miscellaneous' => 'warning',
-                        'Executed' => 'success',
-                        'Cancelled' => 'danger',
-                        default => 'primary',
-                    })
+                    ->toggleable(),
+                Tables\Columns\TextColumn::make('setoutStatus.name')
+                    ->label('Setout Status')
+                    ->searchable()
+                    ->sortable()
+                    ->toggleable(),
+                Tables\Columns\TextColumn::make('writStatus.name')
+                    ->label('Writ Status')
+                    ->searchable()
+                    ->sortable()
                     ->toggleable(),
                 Tables\Columns\TextColumn::make('lbx')
                     ->label('LBX')
@@ -141,10 +143,21 @@ class LeadTable
                     ->multiple()
                     ->preload()
                     ->label('REF'),
-                Tables\Filters\SelectFilter::make('status')
-                    ->options(fn() => Status::where('type', 'lead')->pluck('name', 'name'))
-                    ->multiple()
-                    ->preload(),
+                Tables\Filters\SelectFilter::make('status_id')
+                    ->label('Status')
+                    ->relationship('status', 'name')
+                    ->preload()
+                    ->searchable(),
+                Tables\Filters\SelectFilter::make('setout_id')
+                    ->label('Setout Status')
+                    ->relationship('setoutStatus', 'name')
+                    ->preload()
+                    ->searchable(),
+                Tables\Filters\SelectFilter::make('writ_id')
+                    ->label('Writ Status')
+                    ->relationship('writStatus', 'name')
+                    ->preload()
+                    ->searchable(),
                 Tables\Filters\SelectFilter::make('county')
                     ->options(fn() => Lead::distinct()->pluck('county', 'county')->filter()->sort())
                     ->multiple()
@@ -155,14 +168,6 @@ class LeadTable
                     ->preload(),
                 Tables\Filters\SelectFilter::make('state')
                     ->options(fn() => Lead::distinct()->pluck('state', 'state')->filter()->sort())
-                    ->multiple()
-                    ->preload(),
-                Tables\Filters\SelectFilter::make('writ')
-                    ->options(fn() => Status::where('type', 'writ')->pluck('name', 'name'))
-                    ->multiple()
-                    ->preload(),
-                Tables\Filters\SelectFilter::make('setout')
-                    ->options(fn() => Status::where('type', 'setout')->pluck('name', 'name'))
                     ->multiple()
                     ->preload(),
                 Tables\Filters\Filter::make('has_notes')

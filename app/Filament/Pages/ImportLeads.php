@@ -175,9 +175,9 @@ class ImportLeads extends Page
                             $value = $rowData[$index] !== '' ? $rowData[$index] : null;
 
                             if (in_array($columnName, $leadColumns)) {
-                                // Check if this is a status field and create if needed
+                                // Check if this is a status field and convert name to ID
                                 if ($value && in_array($columnName, ['status', 'setout', 'writ'])) {
-                                    // Determine status type based on column name
+                                    // Determine status type and cache based on column name
                                     $statusType = $columnName === 'status' ? 'lead' : ($columnName === 'setout' ? 'setout' : 'writ');
                                     $statusCache = $statusType === 'lead' ? $leadStatusesCache :
                                                  ($statusType === 'setout' ? $setoutStatusesCache : $writStatusesCache);
@@ -203,14 +203,18 @@ class ImportLeads extends Page
                                                 }
                                             }
                                         } catch (\Exception $e) {
-                                            // Log status creation error but continue with import
                                             Log::warning("Failed to create status", [
                                                 'status' => $value,
                                                 'type' => $statusType,
                                                 'error' => $e->getMessage()
                                             ]);
+                                            continue;
                                         }
                                     }
+
+                                    // Store the status ID instead of name
+                                    $leadData[$columnName . '_id'] = $statusCache[$value];
+                                    continue;
                                 }
 
                                 $leadData[$columnName] = $value;

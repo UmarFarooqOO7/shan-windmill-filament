@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Lead extends Model
 {
@@ -24,9 +25,9 @@ class Lead extends Model
         'case_number',
         'setout_date',
         'setout_time',
-        'status',
-        'writ',
-        'setout',
+        'status_id',
+        'writ_id',
+        'setout_id',
         'lbx',
         'vis_setout',
         'vis_to',
@@ -39,6 +40,21 @@ class Lead extends Model
         'amount_cleared',
         'amount_owed'
     ];
+
+    public function status(): BelongsTo
+    {
+        return $this->belongsTo(Status::class, 'status_id')->where('type', 'lead');
+    }
+
+    public function setoutStatus(): BelongsTo
+    {
+        return $this->belongsTo(Status::class, 'setout_id')->where('type', 'setout');
+    }
+
+    public function writStatus(): BelongsTo
+    {
+        return $this->belongsTo(Status::class, 'writ_id')->where('type', 'writ');
+    }
 
     public function leadAmounts()
     {

@@ -25,15 +25,18 @@ class LeadForm
                                             ->relationship('teams', 'name')
                                             ->preload()
                                             ->multiple(),
-                                        Forms\Components\Select::make('status')
-                                            ->options(fn() => Status::where('type', 'lead')->pluck('name', 'name'))
+                                        Forms\Components\Select::make('status_id')
+                                            ->label('Status')
+                                            ->relationship('status', 'name')
+                                            ->preload()
                                             ->searchable(),
                                         Forms\Components\TextInput::make('case_number'),
                                     ]),
                                 Forms\Components\Section::make('Client Information')
                                     ->schema([
                                         Forms\Components\TextInput::make('plaintiff')
-                                            ->maxLength(255),
+                                            ->maxLength(255)
+                                            ->required(),
                                         Forms\Components\TextInput::make('defendant_first_name')
                                             ->label('Defendant First Name')
                                             ->maxLength(255),
@@ -69,8 +72,10 @@ class LeadForm
                                 ->schema([
                                     Forms\Components\DatePicker::make('setout_date'),
                                     Forms\Components\TimePicker::make('setout_time'),
-                                    Forms\Components\Select::make('setout')
-                                        ->options(fn() => Status::where('type', 'setout')->pluck('name', 'name'))
+                                    Forms\Components\Select::make('setout_id')
+                                        ->label('Setout Status')
+                                        ->relationship('setoutStatus', 'name')
+                                        ->preload()
                                         ->searchable(),
                                     Forms\Components\TimePicker::make('time_on'),
                                     Forms\Components\TimePicker::make('time_en'),
@@ -106,8 +111,10 @@ class LeadForm
                                             $remaining = $record->amount_owed - $record->leadAmounts()->sum('amount_cleared');
                                             return '$' . number_format($remaining, 2);
                                         }),
-                                    Forms\Components\Select::make('writ')
-                                        ->options(fn() => Status::where('type', 'writ')->pluck('name', 'name'))
+                                    Forms\Components\Select::make('writ_id')
+                                        ->label('Writ Status')
+                                        ->relationship('writStatus', 'name')
+                                        ->preload()
                                         ->searchable(),
                                     Forms\Components\TextInput::make('lbx')
                                         ->maxLength(255),

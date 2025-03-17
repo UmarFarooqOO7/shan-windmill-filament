@@ -22,10 +22,13 @@ class LeadStatusChart extends ChartWidget
         $leadQuery = Lead::query();
         $leadQuery = $this->applyTeamScope($leadQuery);
 
-        $data = $leadQuery->select('status', DB::raw('count(*) as count'))
-            ->groupBy('status')
+        $data = $leadQuery->select('status_id', DB::raw('count(*) as count'))
+            ->groupBy('status_id')
             ->get()
-            ->mapWithKeys(fn ($item) => [$item->status => $item->count])
+            ->mapWithKeys(function ($item) {
+                $statusName = Status::find($item->status_id)?->name ?? 'Unknown';
+                return [$statusName => $item->count];
+            })
             ->toArray();
 
         // Get all possible lead statuses
