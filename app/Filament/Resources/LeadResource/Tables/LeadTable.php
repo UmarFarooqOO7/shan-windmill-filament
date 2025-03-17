@@ -11,11 +11,16 @@ use Filament\Tables\Actions\DeleteAction;
 use Filament\Tables\Actions\EditAction;
 use Filament\Tables\Actions\ViewAction;
 use Filament\Tables\Enums\ActionsPosition;
+use Filament\Facades\Filament;
 
 class LeadTable
 {
     public static function table(Table $table): Table
     {
+        // Check if current user is admin
+        $user = Filament::auth()->user();
+        $isAdmin = $user?->is_admin ?? false;
+
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('teams.name')
@@ -109,31 +114,54 @@ class LeadTable
                     ->searchable()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
+                // Admin-only columns
                 Tables\Columns\TextColumn::make('time_on')
                     ->label('Time Start')
                     ->searchable()
                     ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
+                    ->toggleable(isToggledHiddenByDefault: true)
+                    ->visible($isAdmin),
                 Tables\Columns\TextColumn::make('setout_st')
                     ->label('Setout Start')
                     ->searchable()
                     ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
+                    ->toggleable(isToggledHiddenByDefault: true)
+                    ->visible($isAdmin),
                 Tables\Columns\TextColumn::make('setout_en')
                     ->label('Setout End')
                     ->searchable()
                     ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
+                    ->toggleable(isToggledHiddenByDefault: true)
+                    ->visible($isAdmin),
                 Tables\Columns\TextColumn::make('time_en')
                     ->label('Time End')
                     ->searchable()
                     ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
+                    ->toggleable(isToggledHiddenByDefault: true)
+                    ->visible($isAdmin),
                 Tables\Columns\TextColumn::make('locs')
                     ->label('LOCS')
                     ->searchable()
                     ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
+                    ->toggleable(isToggledHiddenByDefault: true)
+                    ->visible($isAdmin),
+                // Financial information (admin only)
+                Tables\Columns\TextColumn::make('amount_owed')
+                    ->label('Amount Owed')
+                    ->money('USD')
+                    ->sortable()
+                    ->visible($isAdmin),
+                Tables\Columns\TextColumn::make('leadAmounts')
+                    ->label('Amount Cleared')
+                    ->state(function ($record) {
+                        $payments = $record->leadAmounts;
+                        if ($payments->isEmpty()) {
+                            return '$0.00';
+                        }
+                        $totalAmount = $payments->sum('amount_cleared');
+                        return '$' . number_format($totalAmount, 2);
+                    })
+                    ->visible($isAdmin),
             ])
 
             // filters for the leads table

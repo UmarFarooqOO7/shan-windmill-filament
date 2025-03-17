@@ -6,11 +6,16 @@ use App\Models\Lead;
 use App\Models\Status;
 use Filament\Forms;
 use Filament\Forms\Form;
+use Filament\Facades\Filament;
 
 class LeadForm
 {
     public static function make(): array
     {
+        // Check if current user is admin
+        $user = Filament::auth()->user();
+        $isAdmin = $user?->is_admin ?? false;
+
         return [
             Forms\Components\Tabs::make('Lead Details')
                 ->tabs([
@@ -77,12 +82,16 @@ class LeadForm
                                         ->relationship('setoutStatus', 'name')
                                         ->preload()
                                         ->searchable(),
-                                    Forms\Components\TimePicker::make('time_on'),
-                                    Forms\Components\TimePicker::make('time_en'),
+                                    Forms\Components\TimePicker::make('time_on')
+                                        ->visible($isAdmin),
+                                    Forms\Components\TimePicker::make('time_en')
+                                        ->visible($isAdmin),
                                     Forms\Components\TextInput::make('setout_st')
-                                        ->maxLength(255),
+                                        ->maxLength(255)
+                                        ->visible($isAdmin),
                                     Forms\Components\TextInput::make('setout_en')
-                                        ->maxLength(255),
+                                        ->maxLength(255)
+                                        ->visible($isAdmin),
                                     Forms\Components\TextInput::make('vis_setout')
                                         ->maxLength(255),
                                     Forms\Components\TextInput::make('vis_to')
@@ -97,20 +106,23 @@ class LeadForm
                                 ->schema([
                                     Forms\Components\TextInput::make('amount_owed')
                                         ->numeric()
-                                        ->prefix('$'),
+                                        ->prefix('$')
+                                        ->visible($isAdmin),
                                     Forms\Components\Placeholder::make('total_cleared')
                                         ->label('Amount Cleared')
                                         ->content(function ($record) {
                                             if (!$record) return '$0.00';
                                             return '$' . number_format($record->leadAmounts()->sum('amount_cleared'), 2);
-                                        }),
+                                        })
+                                        ->visible($isAdmin),
                                     Forms\Components\Placeholder::make('total_remaining')
                                         ->label('Amount Remaining')
                                         ->content(function ($record) {
                                             if (!$record) return '$0.00';
                                             $remaining = $record->amount_owed - $record->leadAmounts()->sum('amount_cleared');
                                             return '$' . number_format($remaining, 2);
-                                        }),
+                                        })
+                                        ->visible($isAdmin),
                                     Forms\Components\Select::make('writ_id')
                                         ->label('Writ Status')
                                         ->relationship('writStatus', 'name')
@@ -138,8 +150,10 @@ class LeadForm
                                         ->reorderable(false)
                                         ->columnSpanFull()
                                         ->addActionLabel('Add Payment')
-                                        ->label('Payments'),
-                                ])->columnSpanFull(),
+                                        ->label('Payments')
+                                ])
+                                ->visible($isAdmin)
+                                ->columnSpanFull(),
                         ]),
 
                     Forms\Components\Tabs\Tab::make('Additional Info')
@@ -147,7 +161,8 @@ class LeadForm
                             Forms\Components\Grid::make()
                                 ->schema([
                                     Forms\Components\TextInput::make('locs')
-                                        ->maxLength(255),
+                                        ->maxLength(255)
+                                        ->visible($isAdmin),
                                     Forms\Components\Textarea::make('notes')
                                         ->columnSpanFull(),
                                 ]),
