@@ -36,7 +36,7 @@
         </ul>
 
         <div class="bg-blue-50 p-4 border border-blue-200 rounded">
-            <p class="text-blue-800"><strong>Note:</strong> Teams will be automatically created if they don't exist yet. Each lead will be associated with the specified teams.</p>
+            <p class="text-blue-800"><strong>Note:</strong> Teams and statuses will be automatically created if they don't exist yet. Each lead will be associated with the specified teams.<br>Status fields (status, setout, writ) with new values will create corresponding status records.</p>
         </div>
     </div>
 </x-filament-panels::page>

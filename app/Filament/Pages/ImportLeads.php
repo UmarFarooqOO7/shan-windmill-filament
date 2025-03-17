@@ -128,9 +128,15 @@ class ImportLeads extends Page
 
                 // Cache team names to IDs for faster lookups
                 $teamsCache = Team::pluck('id', 'name')->toArray();
+                // Cache status names for faster lookups
+                $leadStatusesCache = \App\Models\Status::where('type', 'lead')->pluck('id', 'name')->toArray();
+                $setoutStatusesCache = \App\Models\Status::where('type', 'setout')->pluck('id', 'name')->toArray();
+                $writStatusesCache = \App\Models\Status::where('type', 'writ')->pluck('id', 'name')->toArray();
+
                 $successCount = 0;
                 $errorCount = 0;
                 $createdTeams = 0;
+                $createdStatuses = 0;
                 $errors = [];
                 $rowNumber = 1; // Header row is 0, first data row is 1
 
@@ -169,6 +175,44 @@ class ImportLeads extends Page
                             $value = $rowData[$index] !== '' ? $rowData[$index] : null;
 
                             if (in_array($columnName, $leadColumns)) {
+                                // Check if this is a status field and create if needed
+                                if ($value && in_array($columnName, ['status', 'setout', 'writ'])) {
+                                    // Determine status type based on column name
+                                    $statusType = $columnName === 'status' ? 'lead' : ($columnName === 'setout' ? 'setout' : 'writ');
+                                    $statusCache = $statusType === 'lead' ? $leadStatusesCache :
+                                                 ($statusType === 'setout' ? $setoutStatusesCache : $writStatusesCache);
+
+                                    // Check if status exists, if not create it
+                                    if (!isset($statusCache[$value])) {
+                                        try {
+                                            $status = \App\Models\Status::firstOrCreate([
+                                                'name' => $value,
+                                                'type' => $statusType
+                                            ]);
+
+                                            if ($status->wasRecentlyCreated) {
+                                                $createdStatuses++;
+
+                                                // Update cache
+                                                if ($statusType === 'lead') {
+                                                    $leadStatusesCache[$value] = $status->id;
+                                                } elseif ($statusType === 'setout') {
+                                                    $setoutStatusesCache[$value] = $status->id;
+                                                } else {
+                                                    $writStatusesCache[$value] = $status->id;
+                                                }
+                                            }
+                                        } catch (\Exception $e) {
+                                            // Log status creation error but continue with import
+                                            Log::warning("Failed to create status", [
+                                                'status' => $value,
+                                                'type' => $statusType,
+                                                'error' => $e->getMessage()
+                                            ]);
+                                        }
+                                    }
+                                }
+
                                 $leadData[$columnName] = $value;
                             }
                         }
@@ -251,6 +295,9 @@ class ImportLeads extends Page
                     if ($createdTeams > 0) {
                         $successMessage .= ", created {$createdTeams} new teams";
                     }
+                    if ($createdStatuses > 0) {
+                        $successMessage .= ", created {$createdStatuses} new statuses";
+                    }
                     if ($errorCount > 0) {
                         $successMessage .= " with {$errorCount} errors. See error log for details.";
                     }
@@ -260,6 +307,7 @@ class ImportLeads extends Page
                         'success_count' => $successCount,
                         'error_count' => $errorCount,
                         'created_teams' => $createdTeams,
+                        'created_statuses' => $createdStatuses,
                         'errors_count' => count($errors),
                         'error_report_url' => $errorReportUrl ?? null
                     ]);
