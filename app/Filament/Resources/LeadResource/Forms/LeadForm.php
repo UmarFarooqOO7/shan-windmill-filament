@@ -2,11 +2,10 @@
 
 namespace App\Filament\Resources\LeadResource\Forms;
 
-use App\Models\Lead;
-use App\Models\Status;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Facades\Filament;
+use Icetalker\FilamentTableRepeater\Forms\Components\TableRepeater;
 
 class LeadForm
 {
@@ -134,7 +133,7 @@ class LeadForm
 
                             Forms\Components\Section::make('Payment History')
                                 ->schema([
-                                    Forms\Components\Repeater::make('leadAmounts')
+                                    TableRepeater::make('leadAmounts')
                                         ->relationship()
                                         ->schema([
                                             Forms\Components\TextInput::make('amount_cleared')
@@ -150,7 +149,7 @@ class LeadForm
                                         ->reorderable(false)
                                         ->columnSpanFull()
                                         ->addActionLabel('Add Payment')
-                                        ->label('Payments')
+                                        ->label('Payment Details')
                                         ->grid(2),
                                 ])
                                 ->visible($isAdmin)
