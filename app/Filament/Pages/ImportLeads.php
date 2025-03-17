@@ -228,8 +228,20 @@ class ImportLeads extends Page
 
                     // Export error details to CSV if there were errors
                     $errorFilePath = null;
+                    $errorReportUrl = null;
                     if ($errorCount > 0) {
                         $errorFilePath = $this->exportErrorsToCSV($errors, $header);
+                        $errorReportUrl = Storage::url($errorFilePath);
+
+                        // Log each error individually for better visibility in logs
+                        foreach ($errors as $error) {
+                            Log::error("CSV Import Row Error", [
+                                'row' => $error['row'],
+                                'error' => $error['error'],
+                                'details' => $error['details'] ?? '',
+                                'error_report_url' => $errorReportUrl
+                            ]);
+                        }
                     }
 
                     Storage::disk('public')->delete($this->form->getState()['csv_file']);
@@ -248,7 +260,8 @@ class ImportLeads extends Page
                         'success_count' => $successCount,
                         'error_count' => $errorCount,
                         'created_teams' => $createdTeams,
-                        'errors' => $errors
+                        'errors_count' => count($errors),
+                        'error_report_url' => $errorReportUrl ?? null
                     ]);
 
                     $notification = Notification::make()
@@ -261,7 +274,7 @@ class ImportLeads extends Page
                         $notification->actions([
                             \Filament\Notifications\Actions\Action::make('download_errors')
                                 ->label('Download Error Report')
-                                ->url(Storage::url($errorFilePath))
+                                ->url($errorReportUrl)
                                 ->openUrlInNewTab(),
                         ]);
                     }
@@ -272,6 +285,12 @@ class ImportLeads extends Page
                     // Rollback transaction on error
                     DB::rollBack();
                     fclose($handle);
+
+                    Log::error("CSV Import Failed", [
+                        'message' => $e->getMessage(),
+                        'file' => $e->getFile(),
+                        'line' => $e->getLine(),
+                    ]);
 
                     Notification::make()
                         ->title('Import Error')
