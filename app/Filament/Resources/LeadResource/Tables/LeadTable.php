@@ -95,7 +95,7 @@ class LeadTable
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('vis_setout')
-                    ->label('Vis-Setout')
+                    ->label('Vis-LO')
                     ->searchable()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),

@@ -14,10 +14,10 @@ class LeadForm
         return [
             Forms\Components\Tabs::make('Lead Details')
                 ->tabs([
-                    Forms\Components\Tabs\Tab::make('Basic & Client Information')
+                    Forms\Components\Tabs\Tab::make('Basic & Client Info')
                         ->schema([
                             Forms\Components\Split::make([
-                                Forms\Components\Section::make('Basic Information')
+                                Forms\Components\Section::make('Basic Info')
                                     ->schema([
                                         Forms\Components\Select::make('rid')
                                             ->label('RID')
@@ -32,7 +32,7 @@ class LeadForm
                                             ->searchable(),
                                         Forms\Components\TextInput::make('case_number'),
                                     ]),
-                                Forms\Components\Section::make('Client Information')
+                                Forms\Components\Section::make('Client Info')
                                     ->schema([
                                         Forms\Components\TextInput::make('plaintiff')
                                             ->maxLength(255)
@@ -65,7 +65,7 @@ class LeadForm
                                 ]),
                         ]),
 
-                    Forms\Components\Tabs\Tab::make('Setout Information')
+                    Forms\Components\Tabs\Tab::make('Setout Info')
                         ->schema([
                             Forms\Components\Grid::make()
                                 ->columns(2)
@@ -142,7 +142,7 @@ class LeadForm
                                 ])->columnSpanFull(),
                         ]),
 
-                    Forms\Components\Tabs\Tab::make('Additional Information')
+                    Forms\Components\Tabs\Tab::make('Additional Info')
                         ->schema([
                             Forms\Components\Grid::make()
                                 ->schema([
