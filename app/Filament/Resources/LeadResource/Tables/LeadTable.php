@@ -12,6 +12,8 @@ use Filament\Tables\Actions\EditAction;
 use Filament\Tables\Actions\ViewAction;
 use Filament\Tables\Enums\ActionsPosition;
 use Filament\Facades\Filament;
+use Filament\Tables\Columns\SelectColumn;
+use Filament\Tables\Columns\TextColumn;
 
 class LeadTable
 {
@@ -23,135 +25,132 @@ class LeadTable
 
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('teams.name')
+                TextColumn::make('teams.name')
                     ->label('REF')
                     ->listWithLineBreaks()
                     ->searchable(),
-                Tables\Columns\TextColumn::make('plaintiff')
+                TextColumn::make('plaintiff')
                     ->label('Plaintiff')
                     ->searchable()
                     ->sortable()
                     ->toggleable(),
-                Tables\Columns\TextColumn::make('defendant_first_name')
+                TextColumn::make('defendant_first_name')
                     ->label('Defendant')
                     ->formatStateUsing(fn($record) => $record->defendant_first_name . ' ' . $record->defendant_last_name)
                     ->searchable(['defendant_first_name', 'defendant_last_name'])
                     ->sortable()
                     ->toggleable(),
-                Tables\Columns\TextColumn::make('address')
+                TextColumn::make('address')
                     ->label('Address')
                     ->searchable()
                     ->sortable()
                     ->toggleable(),
-                Tables\Columns\TextColumn::make('county')
+                TextColumn::make('county')
                     ->label('County')
                     ->searchable()
                     ->sortable()
                     ->toggleable(),
-                Tables\Columns\TextColumn::make('city')
+                TextColumn::make('city')
                     ->label('City')
                     ->searchable()
                     ->sortable()
                     ->toggleable(),
-                Tables\Columns\TextColumn::make('state')
+                TextColumn::make('state')
                     ->label('State')
                     ->searchable()
                     ->sortable()
                     ->toggleable(),
-                Tables\Columns\TextColumn::make('zip')
+                TextColumn::make('zip')
                     ->label('Zip')
                     ->searchable()
                     ->sortable()
                     ->toggleable(),
-                Tables\Columns\TextColumn::make('case_number')
+                TextColumn::make('case_number')
                     ->label('Case Number')
                     ->searchable()
                     ->sortable()
                     ->toggleable(),
-                Tables\Columns\TextColumn::make('setout_date')
+                TextColumn::make('setout_date')
                     ->label('Setout Date')
                     ->date()
                     ->sortable()
                     ->searchable()
                     ->toggleable(),
-                Tables\Columns\TextColumn::make('setout_time')
+                TextColumn::make('setout_time')
                     ->label('Setout Time')
                     ->searchable()
                     ->sortable()
                     ->toggleable(),
-                Tables\Columns\TextColumn::make('status.name')
+                SelectColumn::make('status_id')
                     ->label('Status')
-                    ->searchable()
-                    ->sortable()
+                    ->options(fn() => Status::where('type', 'lead')->pluck('name', 'id'))
                     ->toggleable(),
-                Tables\Columns\TextColumn::make('setoutStatus.name')
+                SelectColumn::make('setout_id')
                     ->label('Setout Status')
-                    ->searchable()
-                    ->sortable()
+                    ->options(fn() => Status::where('type', 'setout')->pluck('name', 'id'))
                     ->toggleable(),
-                Tables\Columns\TextColumn::make('writStatus.name')
+                SelectColumn::make('writ_id')
                     ->label('Writ Status')
-                    ->searchable()
-                    ->sortable()
+                    ->options(fn() => Status::where('type', 'writ')->pluck('name', 'id'))
                     ->toggleable(),
-                Tables\Columns\TextColumn::make('lbx')
+                TextColumn::make('lbx')
                     ->label('LBX')
                     ->searchable()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
-                Tables\Columns\TextColumn::make('vis_setout')
+                TextColumn::make('vis_setout')
                     ->label('Vis-LO')
                     ->searchable()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
-                Tables\Columns\TextColumn::make('vis_to')
+                TextColumn::make('vis_to')
                     ->label('Vis-TO')
                     ->searchable()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
-                Tables\Columns\TextColumn::make('notes')
+                TextColumn::make('notes')
                     ->label('Notes')
                     ->searchable()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
                 // Admin-only columns
-                Tables\Columns\TextColumn::make('time_on')
+                TextColumn::make('time_on')
                     ->label('Time Start')
                     ->searchable()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true)
                     ->visible($isAdmin),
-                Tables\Columns\TextColumn::make('setout_st')
+                TextColumn::make('setout_st')
                     ->label('Setout Start')
                     ->searchable()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true)
                     ->visible($isAdmin),
-                Tables\Columns\TextColumn::make('setout_en')
+                TextColumn::make('setout_en')
                     ->label('Setout End')
                     ->searchable()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true)
                     ->visible($isAdmin),
-                Tables\Columns\TextColumn::make('time_en')
+                TextColumn::make('time_en')
                     ->label('Time End')
                     ->searchable()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true)
                     ->visible($isAdmin),
-                Tables\Columns\TextColumn::make('locs')
+                TextColumn::make('locs')
                     ->label('LOCS')
                     ->searchable()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true)
                     ->visible($isAdmin),
                 // Financial information (admin only)
-                Tables\Columns\TextColumn::make('amount_owed')
+                TextColumn::make('amount_owed')
                     ->label('Amount Owed')
                     ->money('USD')
                     ->sortable()
                     ->visible($isAdmin),
-                Tables\Columns\TextColumn::make('leadAmounts')
+                TextColumn::make('leadAmounts')
                     ->label('Amount Cleared')
                     ->state(function ($record) {
                         $payments = $record->leadAmounts;
