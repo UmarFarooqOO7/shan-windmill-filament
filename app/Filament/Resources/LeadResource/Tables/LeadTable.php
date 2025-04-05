@@ -4,6 +4,7 @@ namespace App\Filament\Resources\LeadResource\Tables;
 
 use App\Models\Lead;
 use App\Models\Status;
+use App\Services\LeadStatusNotificationService;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Filament\Tables\Actions\ActionGroup;
@@ -12,6 +13,7 @@ use Filament\Tables\Actions\EditAction;
 use Filament\Tables\Actions\ViewAction;
 use Filament\Tables\Enums\ActionsPosition;
 use Filament\Facades\Filament;
+use Filament\Notifications\Notification;
 use Filament\Tables\Columns\SelectColumn;
 use Filament\Tables\Columns\TextColumn;
 
@@ -22,6 +24,9 @@ class LeadTable
         // Check if current user is admin
         $user = Filament::auth()->user();
         $isAdmin = $user?->is_admin ?? false;
+
+        // Create notification service instance
+        $notificationService = new LeadStatusNotificationService();
 
         return $table
             ->columns([
@@ -84,15 +89,27 @@ class LeadTable
                 SelectColumn::make('status_id')
                     ->label('Status')
                     ->options(fn() => Status::where('type', 'lead')->pluck('name', 'id'))
-                    ->toggleable(),
+                    ->toggleable()
+                    ->afterStateUpdated(function ($record, $state) use ($notificationService) {
+                        $notificationService->notifyStatusChange($record, $state, 'lead');
+                    }),
+
                 SelectColumn::make('setout_id')
                     ->label('Setout Status')
                     ->options(fn() => Status::where('type', 'setout')->pluck('name', 'id'))
-                    ->toggleable(),
+                    ->toggleable()
+                    ->afterStateUpdated(function ($record, $state) use ($notificationService) {
+                        $notificationService->notifyStatusChange($record, $state, 'setout');
+                    }),
+
                 SelectColumn::make('writ_id')
                     ->label('Writ Status')
                     ->options(fn() => Status::where('type', 'writ')->pluck('name', 'id'))
-                    ->toggleable(),
+                    ->toggleable()
+                    ->afterStateUpdated(function ($record, $state) use ($notificationService) {
+                        $notificationService->notifyStatusChange($record, $state, 'writ');
+                    }),
+
                 TextColumn::make('lbx')
                     ->label('LBX')
                     ->searchable()

@@ -32,6 +32,7 @@ class AdminPanelProvider extends PanelProvider
                 'primary' => Color::Emerald,
             ])
             ->spa()
+            ->databaseNotifications()
             ->sidebarCollapsibleOnDesktop()
             ->sidebarWidth('14rem')
             ->maxContentWidth(MaxWidth::Full)
