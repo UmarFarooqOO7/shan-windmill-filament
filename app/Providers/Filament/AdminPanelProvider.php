@@ -33,6 +33,7 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->spa()
             ->databaseNotifications()
+            ->databaseNotificationsPolling('5s')
             ->sidebarCollapsibleOnDesktop()
             ->sidebarWidth('14rem')
             ->maxContentWidth(MaxWidth::Full)

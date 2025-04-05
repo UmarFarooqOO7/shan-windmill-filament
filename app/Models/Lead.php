@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Lead extends Model
 {
@@ -64,5 +65,23 @@ class Lead extends Model
     public function teams()
     {
         return $this->belongsToMany(Team::class, 'leads_teams');
+    }
+
+    /**
+     * Get all status change approval requests for this lead
+     */
+    public function statusChangeApprovals(): HasMany
+    {
+        return $this->hasMany(StatusChangeApproval::class);
+    }
+
+    /**
+     * Get pending status change approval requests for this lead
+     */
+    public function pendingStatusChangeApprovals(): HasMany
+    {
+        return $this->statusChangeApprovals()
+            ->whereNull('approved_at')
+            ->whereNull('rejected_at');
     }
 }
