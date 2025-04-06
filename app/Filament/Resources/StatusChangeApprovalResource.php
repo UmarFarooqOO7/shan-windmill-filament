@@ -6,11 +6,9 @@ use App\Filament\Resources\StatusChangeApprovalResource\Pages;
 use App\Filament\Resources\StatusChangeApprovalResource\Infolists\StatusChangeApprovalInfolist;
 use App\Filament\Resources\StatusChangeApprovalResource\Tables\StatusChangeApprovalTable;
 use App\Models\StatusChangeApproval;
-use Filament\Forms;
 use Filament\Resources\Resource;
 use Filament\Tables\Table;
 use Filament\Infolists\Infolist;
-use Illuminate\Database\Eloquent\Builder;
 
 class StatusChangeApprovalResource extends Resource
 {
