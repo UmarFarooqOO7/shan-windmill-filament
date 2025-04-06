@@ -5,10 +5,12 @@ namespace App\Filament\Resources\StatusChangeApprovalResource\Pages;
 use App\Filament\Resources\StatusChangeApprovalResource;
 use Filament\Resources\Pages\ViewRecord;
 use Filament\Actions;
+use Filament\Infolists;
 
 class ViewStatusChangeApproval extends ViewRecord
 {
     protected static string $resource = StatusChangeApprovalResource::class;
+
 
     protected function getHeaderActions(): array
     {

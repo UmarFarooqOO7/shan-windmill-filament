@@ -5,11 +5,12 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\StatusChangeApprovalResource\Pages;
 use App\Models\StatusChangeApproval;
 use Filament\Forms;
-use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Filament\Tables\Actions\Action;
+use Filament\Infolists;
+use Filament\Infolists\Infolist;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
 
@@ -30,54 +31,95 @@ class StatusChangeApprovalResource extends Resource
 
     public static function getNavigationBadge(): ?string
     {
-        return static::getModel()::where(function($query) {
+        return static::getModel()::where(function ($query) {
             $query->whereNull('approved_at')->whereNull('rejected_at');
         })->count();
     }
 
     public static function getNavigationBadgeColor(): ?string
     {
-        $count = static::getModel()::where(function($query) {
+        $count = static::getModel()::where(function ($query) {
             $query->whereNull('approved_at')->whereNull('rejected_at');
         })->count();
 
         return $count > 0 ? 'warning' : 'success';
     }
 
-    public static function form(Form $form): Form
+    public static function infolist(Infolist $infolist): Infolist
     {
-        return $form
+        return $infolist
             ->schema([
-                Forms\Components\Section::make('Status Change Request')
+                Infolists\Components\Section::make('Status Change Request')
                     ->schema([
-                        Forms\Components\TextInput::make('lead.plaintiff')
-                            ->label('Lead Plaintiff')
-                            ->disabled(),
-                        Forms\Components\TextInput::make('requester.name')
-                            ->label('Requested By')
-                            ->disabled(),
-                        Forms\Components\TextInput::make('status_type')
-                            ->label('Status Type')
-                            ->disabled(),
-                        Forms\Components\TextInput::make('fromStatus.name')
-                            ->label('From Status')
-                            ->disabled(),
-                        Forms\Components\TextInput::make('toStatus.name')
-                            ->label('To Status')
-                            ->disabled(),
-                        Forms\Components\Textarea::make('reason')
-                            ->label('Reason for Change')
-                            ->disabled(),
-                        Forms\Components\DateTimePicker::make('created_at')
-                            ->label('Requested At')
-                            ->disabled(),
+                        Infolists\Components\Grid::make(3)
+                            ->schema([
+                                Infolists\Components\TextEntry::make('status_type')
+                                    ->label('Status Type')
+                                    ->badge()
+                                    ->color(fn(string $state): string => match ($state) {
+                                        'lead' => 'primary',
+                                        'setout' => 'success',
+                                        'writ' => 'warning',
+                                        default => 'gray',
+                                    }),
+                                Infolists\Components\TextEntry::make('fromStatus.name')
+                                    ->label('From Status')
+                                    ->default('NIL'),
+                                Infolists\Components\TextEntry::make('toStatus.name')
+                                    ->label('To Status'),
+                            ]),
+
+                        Infolists\Components\Grid::make(3)
+                            ->schema([
+                                Infolists\Components\TextEntry::make('requester.name')
+                                    ->label('Requested By'),
+                                Infolists\Components\TextEntry::make('reason')
+                                    ->label('Reason for Change')
+                                    ->columnSpan(2),
+                            ]),
+
+                        Infolists\Components\Grid::make(3)
+                            ->schema([
+                                Infolists\Components\TextEntry::make('created_at')
+                                    ->label('Requested At')
+                                    ->dateTime(),
+
+                                Infolists\Components\TextEntry::make('approved_at')
+                                    ->label('Approved At')
+                                    ->dateTime(),
+
+                                Infolists\Components\TextEntry::make('rejected_at')
+                                    ->label('Rejected At')
+                                    ->dateTime(),
+                            ]),
                     ]),
-                
-                Forms\Components\Section::make('Approval Decision')
+
+                Infolists\Components\Section::make('Lead Information')
                     ->schema([
-                        Forms\Components\Textarea::make('rejection_reason')
-                            ->label('Rejection Reason (leave empty to approve)')
-                            ->required(false),
+                        Infolists\Components\Grid::make(2)
+                            ->schema([
+                                Infolists\Components\TextEntry::make('lead.id')
+                                    ->label('Lead ID'),
+                                Infolists\Components\TextEntry::make('lead.plaintiff')
+                                    ->label('Plaintiff'),
+                                Infolists\Components\TextEntry::make('lead.defendant_first_name')
+                                    ->label('Defendant First Name'),
+                                Infolists\Components\TextEntry::make('lead.defendant_last_name')
+                                    ->label('Defendant Last Name'),
+                                Infolists\Components\TextEntry::make('lead.case_number')
+                                    ->label('Case Number'),
+                                Infolists\Components\TextEntry::make('lead.address')
+                                    ->label('Address'),
+                                Infolists\Components\TextEntry::make('lead.city')
+                                    ->label('City'),
+                                Infolists\Components\TextEntry::make('lead.state')
+                                    ->label('State'),
+                                Infolists\Components\TextEntry::make('lead.setout_date')
+                                    ->label('Setout Date')
+                                    ->date(),
+                                Infolists\Components\TextEntry::make('lead.setout_time')
+                                    ->label('Setout Time'),
+                            ]),
                     ]),
             ]);
     }
@@ -97,7 +139,7 @@ class StatusChangeApprovalResource extends Resource
                 Tables\Columns\TextColumn::make('status_type')
                     ->label('Status Type')
                     ->badge()
-                    ->color(fn (string $state): string => match ($state) {
+                    ->color(fn(string $state): string => match ($state) {
                         'lead' => 'primary',
                         'setout' => 'success',
                         'writ' => 'warning',
@@ -105,27 +147,26 @@ class StatusChangeApprovalResource extends Resource
                     }),
                 Tables\Columns\TextColumn::make('fromStatus.name')
                     ->label('From')
+                    ->default('NIL')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('toStatus.name')
                     ->label('To')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('created_at')
                     ->label('Requested At')
-                    ->dateTime()
+                    ->since()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('approved_at')
                     ->label('Approved At')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(),
+                    ->since()
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('rejected_at')
                     ->label('Rejected At')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(),
+                    ->since()
+                    ->sortable(),
                 Tables\Columns\IconColumn::make('is_pending')
                     ->label('Status')
-                    ->getStateUsing(fn (StatusChangeApproval $record): bool => $record->isPending())
+                    ->getStateUsing(fn(StatusChangeApproval $record): bool => $record->isPending())
                     ->boolean()
                     ->trueIcon('heroicon-o-clock')
                     ->falseIcon('heroicon-o-check-circle')
@@ -152,51 +193,60 @@ class StatusChangeApprovalResource extends Resource
                     }),
             ])
             ->actions([
+                Tables\Actions\ViewAction::make(),
+
                 Action::make('approve')
                     ->label('Approve')
                     ->icon('heroicon-o-check')
                     ->color('success')
-                    ->visible(fn (StatusChangeApproval $record) => $record->isPending())
+                    ->visible(fn(StatusChangeApproval $record) => $record->isPending())
                     ->action(function (StatusChangeApproval $record) {
                         // Call service to approve the status change
                         $service = new \App\Services\LeadStatusNotificationService();
                         $lead = $record->lead;
-                        
+
                         // Determine which field to update
-                        $statusField = match($record->status_type) {
+                        $statusField = match ($record->status_type) {
                             'lead' => 'status_id',
                             'setout' => 'setout_id',
                             'writ' => 'writ_id',
                             default => null
                         };
-                        
+
                         if ($statusField) {
                             // Update the lead status
                             $lead->$statusField = $record->to_status_id;
                             $lead->save();
-                            
+
                             // Update the approval record
                             $record->approved_by = Auth::id();
                             $record->approved_at = now();
                             $record->save();
-                            
+
                             // Send notification about the approved status change
                             $service->notifyStatusChange($lead, $record->to_status_id, $record->status_type);
-                            
+
                             // Notify the requester that their request was approved
                             \Filament\Notifications\Notification::make()
                                 ->title('Status Change Approved')
                                 ->body("Your request to change the {$record->status_type} status has been approved.")
                                 ->success()
                                 ->sendToDatabase($record->requester);
+
+                            // Notify the current user
+                            \Filament\Notifications\Notification::make()
+                                ->title('Status Change Approved')
+                                ->body("Status change request has been approved successfully.")
+                                ->success()
+                                ->send();
                         }
                     }),
-                
+
                 Action::make('reject')
                     ->label('Reject')
                     ->icon('heroicon-o-x-mark')
                     ->color('danger')
-                    ->visible(fn (StatusChangeApproval $record) => $record->isPending())
+                    ->visible(fn(StatusChangeApproval $record) => $record->isPending())
                     ->form([
                         Forms\Components\Textarea::make('rejection_reason')
                             ->label('Reason for Rejection')
@@ -208,33 +258,38 @@ class StatusChangeApprovalResource extends Resource
                         $record->rejected_at = now();
                         $record->rejection_reason = $data['rejection_reason'];
                         $record->save();
-                        
+
                         // Notify the requester that their request was rejected
                         \Filament\Notifications\Notification::make()
                             ->title('Status Change Rejected')
                             ->body("Your request to change the {$record->status_type} status was rejected: {$data['rejection_reason']}")
                             ->danger()
                             ->sendToDatabase($record->requester);
+
+                        // Notify the current user
+                        \Filament\Notifications\Notification::make()
+                            ->title('Status Change Rejected')
+                            ->body("Status change request has been rejected.")
+                            ->danger()
+                            ->send();
                     }),
-                
-                Tables\Actions\ViewAction::make(),
             ])
             ->bulkActions([])
             ->defaultSort('created_at', 'desc');
     }
-    
+
     public static function getRelations(): array
     {
         return [
             //
         ];
     }
-    
+
     public static function getPages(): array
     {
         return [
             'index' => Pages\ListStatusChangeApprovals::route('/'),
             'view' => Pages\ViewStatusChangeApproval::route('/{record}'),
         ];
-    }    
+    }
 }
