@@ -6,6 +6,7 @@ use App\Filament\Resources\StatusChangeApprovalResource;
 use App\Filament\Resources\StatusChangeApprovalResource\Infolists\StatusChangeApprovalInfolist;
 use Filament\Resources\Pages\ViewRecord;
 use Filament\Actions;
+use Illuminate\Support\Facades\Auth;
 
 class ViewStatusChangeApproval extends ViewRecord
 {
@@ -18,7 +19,7 @@ class ViewStatusChangeApproval extends ViewRecord
                 ->label('Approve')
                 ->color('success')
                 ->icon('heroicon-o-check')
-                ->visible(fn () => $this->record->isPending() && auth()->user()->is_admin)
+                ->visible(fn () => $this->record->isPending() && Auth::user()->is_admin)
                 ->action(function () {
                     // Use the centralized service
                     $approvalService = app(\App\Services\StatusChangeApprovalActionService::class);
@@ -31,7 +32,7 @@ class ViewStatusChangeApproval extends ViewRecord
                 ->label('Reject')
                 ->color('danger')
                 ->icon('heroicon-o-x-mark')
-                ->visible(fn () => $this->record->isPending() && auth()->user()->is_admin)
+                ->visible(fn () => $this->record->isPending() && Auth::user()->is_admin)
                 ->form([
                     \Filament\Forms\Components\Textarea::make('rejection_reason')
                         ->label('Reason for Rejection')

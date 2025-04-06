@@ -9,6 +9,7 @@ use App\Models\StatusChangeApproval;
 use Filament\Resources\Resource;
 use Filament\Tables\Table;
 use Filament\Infolists\Infolist;
+use Illuminate\Support\Facades\Auth;
 
 class StatusChangeApprovalResource extends Resource
 {
@@ -22,7 +23,7 @@ class StatusChangeApprovalResource extends Resource
     // Only show this resource to admin users
     public static function canAccess(): bool
     {
-        return auth()->user()->is_admin;
+        return Auth::user()->is_admin;
     }
 
     public static function getNavigationBadge(): ?string

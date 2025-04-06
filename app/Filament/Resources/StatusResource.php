@@ -9,6 +9,7 @@ use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Support\Facades\Auth;
 
 class StatusResource extends Resource
 {
@@ -35,6 +36,7 @@ class StatusResource extends Resource
                 Forms\Components\Toggle::make('requires_approval')
                     ->label('Requires Approval')
                     ->default(false)
+                    ->visible(fn() => Auth::user()->is_admin ?? false)
                     ->helperText('If enabled, this status will require admin approval before it can be assigned to a lead.'),
             ]);
     }
@@ -47,7 +49,8 @@ class StatusResource extends Resource
                     ->searchable(),
                 Tables\Columns\TextColumn::make('type'),
                 Tables\Columns\ToggleColumn::make('requires_approval')
-                    ->label('Requires Approval'),
+                    ->label('Requires Approval')
+                    ->visible(fn() => Auth::user()->is_admin ?? false),
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()
