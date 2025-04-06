@@ -201,44 +201,10 @@ class StatusChangeApprovalResource extends Resource
                     ->color('success')
                     ->visible(fn(StatusChangeApproval $record) => $record->isPending())
                     ->action(function (StatusChangeApproval $record) {
-                        // Call service to approve the status change
-                        $service = new \App\Services\LeadStatusNotificationService();
-                        $lead = $record->lead;
-
-                        // Determine which field to update
-                        $statusField = match ($record->status_type) {
-                            'lead' => 'status_id',
-                            'setout' => 'setout_id',
-                            'writ' => 'writ_id',
-                            default => null
-                        };
-
-                        if ($statusField) {
-                            // Update the lead status
-                            $lead->$statusField = $record->to_status_id;
-                            $lead->save();
-
-                            // Update the approval record
-                            $record->approved_by = Auth::id();
-                            $record->approved_at = now();
-                            $record->save();
-
-                            // Send notification about the approved status change
-                            $service->notifyStatusChange($lead, $record->to_status_id, $record->status_type);
-
-                            // Notify the requester that their request was approved
-                            \Filament\Notifications\Notification::make()
-                                ->title('Status Change Approved')
-                                ->body("Your request to change the {$record->status_type} status has been approved.")
-                                ->success()
-                                ->sendToDatabase($record->requester);
-
-                            // Notify the current user
-                            \Filament\Notifications\Notification::make()
-                                ->title('Status Change Approved')
-                                ->body("Status change request has been approved successfully.")
-                                ->success()
-                                ->send();
+                        // Use the centralized service
+                        $approvalService = app(\App\Services\StatusChangeApprovalActionService::class);
+                        if ($approvalService->approveStatusChange($record)) {
+                            // Success notification is already handled by the service
                         }
                     }),
 
@@ -253,25 +219,11 @@ class StatusChangeApprovalResource extends Resource
                             ->required(),
                     ])
                     ->action(function (StatusChangeApproval $record, array $data) {
-                        // Update the approval record
-                        $record->approved_by = Auth::id();
-                        $record->rejected_at = now();
-                        $record->rejection_reason = $data['rejection_reason'];
-                        $record->save();
-
-                        // Notify the requester that their request was rejected
-                        \Filament\Notifications\Notification::make()
-                            ->title('Status Change Rejected')
-                            ->body("Your request to change the {$record->status_type} status was rejected: {$data['rejection_reason']}")
-                            ->danger()
-                            ->sendToDatabase($record->requester);
-
-                        // Notify the current user
-                        \Filament\Notifications\Notification::make()
-                            ->title('Status Change Rejected')
-                            ->body("Status change request has been rejected.")
-                            ->danger()
-                            ->send();
+                        // Use the centralized service
+                        $approvalService = app(\App\Services\StatusChangeApprovalActionService::class);
+                        if ($approvalService->rejectStatusChange($record, $data['rejection_reason'])) {
+                            // Success notification is already handled by the service
+                        }
                     }),
             ])
             ->bulkActions([])
