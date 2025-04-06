@@ -19,18 +19,18 @@ class LeadObserver
      */
     public function updated(Lead $lead): void
     {
-        // Check if status_id has been changed
-        if ($lead->isDirty('status_id') && $lead->status_id) {
+        // Check if status_id has been changed - notify even for null values
+        if ($lead->isDirty('status_id')) {
             $this->notificationService->notifyStatusChange($lead, $lead->status_id, 'lead');
         }
 
-        // Check if setout_id has been changed
-        if ($lead->isDirty('setout_id') && $lead->setout_id) {
+        // Check if setout_id has been changed - notify even for null values
+        if ($lead->isDirty('setout_id')) {
             $this->notificationService->notifyStatusChange($lead, $lead->setout_id, 'setout');
         }
 
-        // Check if writ_id has been changed
-        if ($lead->isDirty('writ_id') && $lead->writ_id) {
+        // Check if writ_id has been changed - notify even for null values
+        if ($lead->isDirty('writ_id')) {
             $this->notificationService->notifyStatusChange($lead, $lead->writ_id, 'writ');
         }
     }
