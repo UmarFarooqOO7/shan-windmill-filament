@@ -33,7 +33,14 @@ class LeadForm
                                             ->label('Status')
                                             ->relationship('status', 'name')
                                             ->preload()
-                                            ->searchable(),
+                                            ->searchable()
+                                            ->afterStateUpdated(function ($state, $record, $set) {
+                                                if ($record && $state) {
+                                                    // We'll let the observer handle the notification
+                                                    // This is just for immediate feedback in the UI
+                                                    $record->status_id = $state;
+                                                }
+                                            }),
                                         Forms\Components\TextInput::make('case_number'),
                                     ]),
                                 Forms\Components\Section::make('Client Info')
@@ -80,7 +87,14 @@ class LeadForm
                                         ->label('Setout Status')
                                         ->relationship('setoutStatus', 'name')
                                         ->preload()
-                                        ->searchable(),
+                                        ->searchable()
+                                        ->afterStateUpdated(function ($state, $record, $set) {
+                                            if ($record && $state) {
+                                                // We'll let the observer handle the notification
+                                                // This is just for immediate feedback in the UI
+                                                $record->setout_id = $state;
+                                            }
+                                        }),
                                     Forms\Components\TimePicker::make('time_on')
                                         ->visible($isAdmin),
                                     Forms\Components\TimePicker::make('time_en')
@@ -126,7 +140,14 @@ class LeadForm
                                         ->label('Writ Status')
                                         ->relationship('writStatus', 'name')
                                         ->preload()
-                                        ->searchable(),
+                                        ->searchable()
+                                        ->afterStateUpdated(function ($state, $record, $set) {
+                                            if ($record && $state) {
+                                                // We'll let the observer handle the notification
+                                                // This is just for immediate feedback in the UI
+                                                $record->writ_id = $state;
+                                            }
+                                        }),
                                     Forms\Components\TextInput::make('lbx')
                                         ->maxLength(255),
                                 ]),
@@ -160,11 +181,11 @@ class LeadForm
                         ->schema([
                             Forms\Components\Grid::make()
                                 ->schema([
-                                    Forms\Components\TextInput::make('locs')
-                                        ->maxLength(255)
-                                        ->visible($isAdmin),
-                                    Forms\Components\Textarea::make('notes')
-                                        ->columnSpanFull(),
+                                Forms\Components\TextInput::make('locs')
+                                    ->maxLength(255)
+                                    ->visible($isAdmin),
+                                Forms\Components\Textarea::make('notes')
+                                    ->columnSpanFull(),
                                 ]),
                         ]),
                 ])
