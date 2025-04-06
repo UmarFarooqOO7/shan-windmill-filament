@@ -3,10 +3,9 @@
 namespace App\Filament\Resources\StatusChangeApprovalResource\Pages;
 
 use App\Filament\Resources\StatusChangeApprovalResource;
-use App\Services\StatusChangeApprovalActionService;
+use App\Filament\Resources\StatusChangeApprovalResource\Infolists\StatusChangeApprovalInfolist;
 use Filament\Resources\Pages\ViewRecord;
 use Filament\Actions;
-use Filament\Infolists;
 
 class ViewStatusChangeApproval extends ViewRecord
 {
@@ -22,7 +21,7 @@ class ViewStatusChangeApproval extends ViewRecord
                 ->visible(fn () => $this->record->isPending() && auth()->user()->is_admin)
                 ->action(function () {
                     // Use the centralized service
-                    $approvalService = app(StatusChangeApprovalActionService::class);
+                    $approvalService = app(\App\Services\StatusChangeApprovalActionService::class);
                     if ($approvalService->approveStatusChange($this->record)) {
                         $this->redirect(StatusChangeApprovalResource::getUrl('index'));
                     }
@@ -40,7 +39,7 @@ class ViewStatusChangeApproval extends ViewRecord
                 ])
                 ->action(function (array $data) {
                     // Use the centralized service
-                    $approvalService = app(StatusChangeApprovalActionService::class);
+                    $approvalService = app(\App\Services\StatusChangeApprovalActionService::class);
                     if ($approvalService->rejectStatusChange($this->record, $data['rejection_reason'])) {
                         $this->redirect(StatusChangeApprovalResource::getUrl('index'));
                     }
