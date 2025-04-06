@@ -32,6 +32,10 @@ class StatusResource extends Resource
                         'writ' => 'Writ',
                     ])
                     ->required(),
+                Forms\Components\Toggle::make('requires_approval')
+                    ->label('Requires Approval')
+                    ->default(false)
+                    ->helperText('If enabled, this status will require admin approval before it can be assigned to a lead.'),
             ]);
     }
 
@@ -42,6 +46,8 @@ class StatusResource extends Resource
                 Tables\Columns\TextColumn::make('name')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('type'),
+                Tables\Columns\ToggleColumn::make('requires_approval')
+                    ->label('Requires Approval'),
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()
