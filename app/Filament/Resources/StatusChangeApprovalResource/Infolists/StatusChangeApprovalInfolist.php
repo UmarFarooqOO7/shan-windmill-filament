@@ -37,9 +37,9 @@ class StatusChangeApprovalInfolist
                             ->schema([
                                 Components\TextEntry::make('requester.name')
                                     ->label('Requested By'),
-                                Components\TextEntry::make('reason')
-                                    ->label('Reason for Change')
-                                    ->columnSpan(2),
+                                // Components\TextEntry::make('reason')
+                                //     ->label('Reason for Change')
+                                //     ->columnSpan(2),
                             ]),
 
                         Components\Grid::make(3)
