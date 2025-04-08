@@ -57,6 +57,7 @@ class StatusChangeApproval extends Model
      */
     public function fromStatus(): BelongsTo
     {
+        // Don't filter by status type since fromStatus and toStatus can be of different types
         return $this->belongsTo(Status::class, 'from_status_id');
     }
 
@@ -65,6 +66,7 @@ class StatusChangeApproval extends Model
      */
     public function toStatus(): BelongsTo
     {
+        // Don't filter by status type since fromStatus and toStatus can be of different types
         return $this->belongsTo(Status::class, 'to_status_id');
     }
 

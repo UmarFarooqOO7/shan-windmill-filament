@@ -8,6 +8,7 @@ use App\Models\StatusChangeApproval;
 use App\Models\User;
 use Filament\Facades\Filament;
 use Filament\Notifications\Notification;
+use Illuminate\Support\Facades\Log;
 
 class StatusChangeApprovalService
 {
@@ -18,9 +19,10 @@ class StatusChangeApprovalService
      * @param int|null $statusId The new status ID
      * @param string $statusType The type of status (lead, setout, writ)
      * @param string|null $reason Optional reason for the status change
+     * @param int|null $originalStatusId The original status ID before the change
      * @return bool Whether the status was changed immediately (true) or queued for approval (false)
      */
-    public function handleStatusChange(Lead $lead, ?int $statusId, string $statusType, ?string $reason = null): bool
+    public function handleStatusChange(Lead $lead, ?int $statusId, string $statusType, ?string $reason = null, ?int $originalStatusId = null): bool
     {
         // If status is null, allow it to be set directly (clearing a status doesn't need approval)
         if ($statusId === null) {
@@ -32,6 +34,22 @@ class StatusChangeApprovalService
         if (!$status) {
             return true; // If status not found, allow change (defensive)
         }
+
+        // Determine which field stores this status type
+        $statusField = match ($statusType) {
+            'lead' => 'status_id',
+            'setout' => 'setout_id',
+            'writ' => 'writ_id',
+            default => null
+        };
+
+        if (!$statusField) {
+            return true; // Unknown status type, allow the change (defensive)
+        }
+
+        // Get the current status ID (which will be the "from" status)
+        // Use the explicitly passed original status ID if available, otherwise use the one from the lead
+        $fromStatusId = $originalStatusId ?? $lead->$statusField;
 
         // If status doesn't require approval, allow the change
         if (!$status->requiresApproval()) {
@@ -49,20 +67,10 @@ class StatusChangeApprovalService
             return true;
         }
 
-        // Determine which field stores this status type
-        $statusField = match($statusType) {
-            'lead' => 'status_id',
-            'setout' => 'setout_id',
-            'writ' => 'writ_id',
-            default => null
-        };
-
-        if (!$statusField) {
-            return true; // Unknown status type, allow the change (defensive)
+        // If the from and to status IDs are actually the same, allow the change without approval
+        if ($fromStatusId === $statusId) {
+            return true;
         }
-
-        // Get the current status ID (which will be the "from" status)
-        $fromStatusId = $lead->$statusField;
 
         // Create a status change approval request
         StatusChangeApproval::create([

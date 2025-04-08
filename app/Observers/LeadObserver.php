@@ -24,13 +24,19 @@ class LeadObserver
      */
     public function updating(Lead $lead): void
     {
+        // Get the form data
+        $formData = $this->getFormData();
+
         // Check if status_id has been changed
         if ($lead->isDirty('status_id')) {
             $newStatusId = $lead->status_id;
+            $originalStatusId = $lead->getOriginal('status_id');
+            $reason = $formData['status_reason'] ?? null;
+
             // Check if the status change requires approval
-            if (!$this->approvalService->handleStatusChange($lead, $newStatusId, 'lead')) {
+            if (!$this->approvalService->handleStatusChange($lead, $newStatusId, 'lead', $reason, $originalStatusId)) {
                 // If approval is required, revert the status change
-                $lead->status_id = $lead->getOriginal('status_id');
+                $lead->status_id = $originalStatusId;
 
                 // Notify user that the change requires approval
                 $this->notifyUserOfPendingApproval($lead, 'lead');
@@ -40,10 +46,13 @@ class LeadObserver
         // Check if setout_id has been changed
         if ($lead->isDirty('setout_id')) {
             $newStatusId = $lead->setout_id;
+            $originalStatusId = $lead->getOriginal('setout_id');
+            $reason = $formData['setout_status_reason'] ?? null;
+
             // Check if the status change requires approval
-            if (!$this->approvalService->handleStatusChange($lead, $newStatusId, 'setout')) {
+            if (!$this->approvalService->handleStatusChange($lead, $newStatusId, 'setout', $reason, $originalStatusId)) {
                 // If approval is required, revert the status change
-                $lead->setout_id = $lead->getOriginal('setout_id');
+                $lead->setout_id = $originalStatusId;
 
                 // Notify user that the change requires approval
                 $this->notifyUserOfPendingApproval($lead, 'setout');
@@ -53,10 +62,13 @@ class LeadObserver
         // Check if writ_id has been changed
         if ($lead->isDirty('writ_id')) {
             $newStatusId = $lead->writ_id;
+            $originalStatusId = $lead->getOriginal('writ_id');
+            $reason = $formData['writ_status_reason'] ?? null;
+
             // Check if the status change requires approval
-            if (!$this->approvalService->handleStatusChange($lead, $newStatusId, 'writ')) {
+            if (!$this->approvalService->handleStatusChange($lead, $newStatusId, 'writ', $reason, $originalStatusId)) {
                 // If approval is required, revert the status change
-                $lead->writ_id = $lead->getOriginal('writ_id');
+                $lead->writ_id = $originalStatusId;
 
                 // Notify user that the change requires approval
                 $this->notifyUserOfPendingApproval($lead, 'writ');
@@ -102,5 +114,13 @@ class LeadObserver
             ->body("Your request to change the {$statusTypeLabel} status for Lead #{$lead->id} requires admin approval. You'll be notified once it's approved or rejected.")
             ->warning()
             ->send();
+    }
+
+    /**
+     * Get the form data
+     */
+    private function getFormData(): array
+    {
+        return request()->all();
     }
 }
