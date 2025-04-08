@@ -8,7 +8,6 @@ use App\Models\StatusChangeApproval;
 use App\Models\User;
 use Filament\Facades\Filament;
 use Filament\Notifications\Notification;
-use Illuminate\Support\Facades\Log;
 
 class StatusChangeApprovalService
 {
@@ -49,7 +48,16 @@ class StatusChangeApprovalService
 
         // Get the current status ID (which will be the "from" status)
         // Use the explicitly passed original status ID if available, otherwise use the one from the lead
-        $fromStatusId = $originalStatusId ?? $lead->$statusField;
+        $fromStatusId = $originalStatusId;
+
+        // Get the from status name for display purposes
+        $fromStatusName = "None";
+        if ($originalStatusId) {
+            $fromStatus = Status::find($originalStatusId);
+            if ($fromStatus) {
+                $fromStatusName = $fromStatus->name;
+            }
+        }
 
         // If status doesn't require approval, allow the change
         if (!$status->requiresApproval()) {
@@ -77,13 +85,13 @@ class StatusChangeApprovalService
             'lead_id' => $lead->id,
             'requested_by' => $currentUser->id,
             'status_type' => $statusType,
-            'from_status_id' => $fromStatusId,
+            'from_status_id' => $fromStatusId ?? null,
             'to_status_id' => $statusId,
             'reason' => $reason,
         ]);
 
         // Notify admin users
-        $this->notifyAdminsOfPendingApproval($lead, $currentUser, $status, $statusType);
+        $this->notifyAdminsOfPendingApproval($lead, $currentUser, $status, $statusType, $fromStatusName);
 
         // Return false to indicate the status wasn't changed immediately
         return false;
@@ -92,14 +100,14 @@ class StatusChangeApprovalService
     /**
      * Notify admin users about a pending status change approval
      */
-    private function notifyAdminsOfPendingApproval(Lead $lead, User $requester, Status $toStatus, string $statusType): void
+    private function notifyAdminsOfPendingApproval(Lead $lead, User $requester, Status $toStatus, string $statusType, string $fromStatusName): void
     {
         // Format a user-friendly status type label
         $statusTypeLabel = ucfirst($statusType);
 
         // Create notification title and body
         $title = "Pending {$statusTypeLabel} Status Change";
-        $body = "{$requester->name} requested to change Lead #{$lead->id} ({$lead->plaintiff}) {$statusTypeLabel} status to \"{$toStatus->name}\". This requires your approval.";
+        $body = "{$requester->name} requested to change Lead #{$lead->id} ({$lead->plaintiff}) {$statusTypeLabel} status from \"{$fromStatusName}\" to \"{$toStatus->name}\". This requires your approval.";
 
         // Send notifications to admin users
         $adminUsers = User::where('is_admin', true)->get();
