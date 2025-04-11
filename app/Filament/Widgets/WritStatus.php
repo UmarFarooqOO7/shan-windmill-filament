@@ -28,10 +28,15 @@ class WritStatus extends BaseWidget
                     ->label('Status'),
                 TextColumn::make('lead_count')
                     ->label('Total Leads')
-                    ->sortable(),
+                    ->sortable()
+                    ->badge()
+                    ->color(fn ($record): string => $record->lead_count > 0 ? 'primary' : 'gray')
+                    ->alignCenter()
+                    ->size('lg'),
             ])
             ->paginated(false)
             ->striped()
+            ->poll('30s')
             ->defaultSort('lead_count', 'desc');
     }
 }
