@@ -18,7 +18,8 @@ class SetoutStatus extends BaseWidget
     public function table(Table $table): Table
     {
         return $table
-            ->query(fn () =>
+            ->query(
+                fn() =>
                 Status::where('type', 'setout')
                     ->select(['statuses.*', DB::raw('COUNT(leads.id) as lead_count')])
                     ->leftJoin('leads', 'statuses.id', '=', 'leads.setout_id')
@@ -26,15 +27,19 @@ class SetoutStatus extends BaseWidget
             )
             ->columns([
                 TextColumn::make('name')
-                    ->label('Status'),
+                    ->label('Status')
+                    ->tooltip(fn(Status $record): string => "View all leads with {$record->name} status"),
                 TextColumn::make('lead_count')
                     ->label('Total Leads')
                     ->sortable()
                     ->badge()
-                    ->color(fn ($record): string => $record->lead_count > 0 ? 'primary' : 'gray')
+                    ->color(fn($record): string => $record->lead_count > 0 ? 'success' : 'gray')
                     ->alignCenter()
-                    ->size('lg'),
             ])
+            ->recordUrl(fn(Status $record): string => route(
+                'filament.admin.resources.leads.index',
+                ['tableFilters[setout_id][value]' => $record->id]
+            ))
             ->paginated(false)
             ->striped()
             ->poll('30s')
