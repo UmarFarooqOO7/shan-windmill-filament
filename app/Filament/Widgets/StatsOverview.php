@@ -17,6 +17,8 @@ class StatsOverview extends BaseWidget
 {
     use HasTeamScope;
 
+    protected int | string | array $columnSpan = 'full';
+
     protected function getHeading(): ?string
     {
         return 'Overview';

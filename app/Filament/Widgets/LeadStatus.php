@@ -2,9 +2,7 @@
 
 namespace App\Filament\Widgets;
 
-use App\Models\Lead;
 use App\Models\Status;
-use Filament\Tables;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Filament\Widgets\TableWidget as BaseWidget;
@@ -12,9 +10,10 @@ use Illuminate\Support\Facades\DB;
 
 class LeadStatus extends BaseWidget
 {
-    protected static ?string $heading = 'Lead Status Counts';
+    protected static ?string $heading = 'Lead Status';
 
     protected static ?int $sort = 3;
+    protected int | string | array $columnSpan = 4;
 
     public function table(Table $table): Table
     {
@@ -27,13 +26,13 @@ class LeadStatus extends BaseWidget
             )
             ->columns([
                 TextColumn::make('name')
-                    ->label('Status')
-                    ->searchable()
-                    ->sortable(),
+                    ->label('Status'),
                 TextColumn::make('lead_count')
                     ->label('Total Leads')
                     ->sortable(),
             ])
+            ->paginated(false)
+            ->striped()
             ->defaultSort('lead_count', 'desc');
     }
 }

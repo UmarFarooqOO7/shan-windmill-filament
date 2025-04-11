@@ -14,7 +14,8 @@ class LeadStatusChart extends ChartWidget
 
     protected static ?string $heading = 'Leads by Status';
 
-    protected static ?int $sort = 2;
+    protected static ?int $sort = 12;
+    protected int | string | array $columnSpan = '4';
 
     protected function getData(): array
     {
