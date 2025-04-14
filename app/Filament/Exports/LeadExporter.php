@@ -6,10 +6,19 @@ use App\Models\Lead;
 use Filament\Actions\Exports\ExportColumn;
 use Filament\Actions\Exports\Exporter;
 use Filament\Actions\Exports\Models\Export;
+use Filament\Actions\Exports\Enums\ExportFormat;
 
 class LeadExporter extends Exporter
 {
     protected static ?string $model = Lead::class;
+
+
+    public function getFormats(): array
+    {
+        return [
+            ExportFormat::Csv,
+        ];
+    }
 
     public static function getColumns(): array
     {
