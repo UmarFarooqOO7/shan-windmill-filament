@@ -62,12 +62,28 @@ class LeadExporter extends Exporter
                 ->label('time_en'),
             ExportColumn::make('locs')
                 ->label('locs'),
+            // total amount owed
             ExportColumn::make('amount_owed')
                 ->label('amount_owed'),
+            // total amount cleared
             ExportColumn::make('leadAmounts')
                 ->label('amount_cleared')
                 ->state(function (Lead $record): float {
                     return $record->leadAmounts->sum('amount_cleared') ?? 0;
+                }),
+            // comma separated values of all leadAmounts amount_cleared
+            ExportColumn::make('leadAmounts.amount_cleared'),
+            // calculate the total remaining amount
+            // total remaining amount = amount_owed - sum(leadAmounts.amount_cleared)
+            // if amount_owed is null, set it to 0
+            // if sum(leadAmounts.amount_cleared) is null, set it to 0
+            // if total remaining amount is less than 0, set it to 0
+            ExportColumn::make('total_remaining_amount')
+                ->label('total_remaining_amount')
+                ->state(function (Lead $record): float {
+                    $totalOwed = $record->amount_owed ?? 0;
+                    $totalCleared = $record->leadAmounts->sum('amount_cleared') ?? 0;
+                    return max(0, $totalOwed - $totalCleared);
                 }),
             ExportColumn::make('created_at'),
             ExportColumn::make('updated_at'),
