@@ -1,3 +1,3 @@
-rid,plaintiff,defendant_first_name,defendant_last_name,address,county,city,state,zip,case_number,setout_date,setout_time,status,writ,setout,lbx,vis_setout,vis_to,notes,time_on,setout_st,setout_en,time_en,locs,amount_cleared,amount_owed
-"Team1, Team B","ABC Corp",John,Doe,"123 Main St","Sample County","Sample City",NY,10001,CaseNo123,2023-05-15,"10:00 AM",New,Yes,Yes,No,Yes,No,"Sample lead notes",08:00,09:00,10:00,11:00,"Location A",1000,500
-"Team C","XYZ Inc",Jane,Smith,"456 Oak Ave","Another County","Another City",CA,90210,CaseNo456,2023-05-16,"11:30 AM","In Progress",No,Yes,Yes,No,Yes,"Another sample note",09:00,10:00,11:00,12:00,"Location B",1500,750
+rid,plaintiff,defendant_first_name,defendant_last_name,address,county,city,state,zip,case_number,setout_date,setout_time,status,writ,setout,lbx,vis_setout,vis_to,notes,time_on,setout_st,setout_en,time_en,locs,amount_owed
+"Team1, Team B","ABC Corp",John,Doe,"123 Main St","Sample County","Sample City",NY,10001,CaseNo123,2023-05-15,"10:00 AM",New,Yes,Yes,No,Yes,No,"Sample lead notes",08:00,09:00,10:00,11:00,"Location A",1000
+"Team C","XYZ Inc",Jane,Smith,"456 Oak Ave","Another County","Another City",CA,90210,CaseNo456,2023-05-16,"11:30 AM","In Progress",No,Yes,Yes,No,Yes,"Another sample note",09:00,10:00,11:00,12:00,"Location B",1500

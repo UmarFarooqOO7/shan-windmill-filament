@@ -11,7 +11,7 @@
             <div class="mt-4 flex gap-4">
                 <x-filament::button type="submit" wire:loading.attr="disabled">
                     <span wire:loading.remove>Import Leads</span>
-                    <span wire:loading>Importing...</span>
+                    <span wire:loading>Processing...</span>
                 </x-filament::button>
 
                 <x-filament::button
