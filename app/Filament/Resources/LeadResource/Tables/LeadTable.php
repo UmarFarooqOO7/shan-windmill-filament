@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\LeadResource\Tables;
 
+use App\Filament\Exports\LeadExporter;
 use App\Models\Lead;
 use App\Models\Status;
 use App\Services\LeadStatusNotificationService;
@@ -14,6 +15,7 @@ use Filament\Tables\Actions\ViewAction;
 use Filament\Tables\Enums\ActionsPosition;
 use Filament\Facades\Filament;
 use Filament\Notifications\Notification;
+use Filament\Tables\Actions\ExportBulkAction;
 use Filament\Tables\Columns\SelectColumn;
 use Filament\Tables\Columns\TextColumn;
 
@@ -221,6 +223,7 @@ class LeadTable
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
+                    ExportBulkAction::make()->exporter(LeadExporter::class)
                 ]),
             ])
 
