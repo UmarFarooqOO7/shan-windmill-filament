@@ -64,8 +64,11 @@ class LeadExporter extends Exporter
                 ->label('locs'),
             ExportColumn::make('amount_owed')
                 ->label('amount_owed'),
-            ExportColumn::make('amount_cleared')
-                ->label('amount_cleared'),
+            ExportColumn::make('leadAmounts')
+                ->label('amount_cleared')
+                ->state(function (Lead $record): float {
+                    return $record->leadAmounts->sum('amount_cleared') ?? 0;
+                }),
             ExportColumn::make('created_at'),
             ExportColumn::make('updated_at'),
         ];
