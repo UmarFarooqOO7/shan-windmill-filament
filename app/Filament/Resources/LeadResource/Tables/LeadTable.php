@@ -224,7 +224,9 @@ class LeadTable
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
-                    ExportBulkAction::make()->exporter(LeadExporter::class),
+                    ExportBulkAction::make()
+                        ->label('Export selected')
+                        ->exporter(LeadExporter::class),
                     PrintLeadsBulkAction::make(),
                 ]),
             ])
