@@ -81,6 +81,7 @@ class ImportLeads extends Page
         // Validate file upload
         if (empty($data['csv_file'])) {
             Notification::make()
+                ->seconds(10)
                 ->title('Import Error')
                 ->body('No file was uploaded')
                 ->danger()
@@ -104,6 +105,7 @@ class ImportLeads extends Page
 
                 if (!empty($missingRequiredFields)) {
                     Notification::make()
+                        ->seconds(10)
                         ->title('Import Error')
                         ->body('The CSV file is missing required fields: ' . implode(', ', $missingRequiredFields))
                         ->danger()
@@ -121,6 +123,7 @@ class ImportLeads extends Page
 
                 if ($teamFieldIndex === false) {
                     Notification::make()
+                        ->seconds(10)
                         ->title('Import Warning')
                         ->body('No team column found in CSV. Leads will be created without team assignments.')
                         ->warning()
@@ -310,6 +313,7 @@ class ImportLeads extends Page
                     ]);
 
                     $notification = Notification::make()
+                        ->seconds(10)
                         ->title('Import Complete')
                         ->body($successMessage)
                         ->success();
@@ -325,7 +329,6 @@ class ImportLeads extends Page
                     }
 
                     $notification->send();
-
                 } catch (\Exception $e) {
                     // Rollback transaction on error
                     DB::rollBack();
@@ -338,6 +341,7 @@ class ImportLeads extends Page
                     ]);
 
                     Notification::make()
+                        ->seconds(10)
                         ->title('Import Error')
                         ->body('Error importing data: ' . $e->getMessage())
                         ->danger()
@@ -345,6 +349,7 @@ class ImportLeads extends Page
                 }
             } else {
                 Notification::make()
+                    ->seconds(10)
                     ->title('Import Error')
                     ->body('Unable to open the CSV file')
                     ->danger()
@@ -352,6 +357,7 @@ class ImportLeads extends Page
             }
         } catch (\Exception $e) {
             Notification::make()
+                ->seconds(10)
                 ->title('Import Error')
                 ->body('Error: ' . $e->getMessage())
                 ->danger()
