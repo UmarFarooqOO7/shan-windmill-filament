@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\LeadResource\Tables;
 
+use App\Filament\Actions\PrintLeadsBulkAction;
 use App\Filament\Exports\LeadExporter;
 use App\Models\Lead;
 use App\Models\Status;
@@ -223,7 +224,8 @@ class LeadTable
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
-                    ExportBulkAction::make()->exporter(LeadExporter::class)
+                    ExportBulkAction::make()->exporter(LeadExporter::class),
+                    PrintLeadsBulkAction::make(),
                 ]),
             ])
 
