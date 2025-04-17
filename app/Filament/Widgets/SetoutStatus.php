@@ -21,9 +21,15 @@ class SetoutStatus extends BaseWidget
             ->query(
                 fn() =>
                 Status::where('type', 'setout')
-                    ->select(['statuses.*', DB::raw('COUNT(leads.id) as lead_count')])
+                    // ->select(['statuses.*', DB::raw('COUNT(leads.id) as lead_count')])
+                    ->select([
+                        'statuses.id',
+                        'statuses.name',
+                        DB::raw('COUNT(leads.id) as lead_count'),
+                    ])
                     ->leftJoin('leads', 'statuses.id', '=', 'leads.setout_id')
-                    ->groupBy('statuses.id')
+                    ->groupBy('statuses.id', 'statuses.name')
+                    // ->groupBy('statuses.id')
             )
             ->columns([
                 TextColumn::make('name')
