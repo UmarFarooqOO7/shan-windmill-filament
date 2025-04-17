@@ -20,9 +20,15 @@ class WritStatus extends BaseWidget
             ->query(
                 fn() =>
                 Status::where('type', 'writ')
-                    ->select(['statuses.*', DB::raw('COUNT(leads.id) as lead_count')])
+                    // ->select(['statuses.*', DB::raw('COUNT(leads.id) as lead_count')])
+                    ->select([
+                        'statuses.id',
+                        'statuses.name',
+                        DB::raw('COUNT(leads.id) as lead_count'),
+                    ])
                     ->leftJoin('leads', 'statuses.id', '=', 'leads.writ_id')
-                    ->groupBy('statuses.id')
+                    // ->groupBy('statuses.id')
+                    ->groupBy('statuses.id', 'statuses.name')
             )
             ->columns([
                 TextColumn::make('name')
