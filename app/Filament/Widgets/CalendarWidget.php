@@ -2,17 +2,53 @@
 
 namespace App\Filament\Widgets;
 
-use App\Models\Event; // Import the Event model
+use App\Models\Event;
+use Filament\Forms\Components\DateTimePicker;
+use Filament\Forms\Components\Grid;
+use Filament\Forms\Components\TextInput;
 use Saade\FilamentFullCalendar\Widgets\FullCalendarWidget;
-use Illuminate\Support\Carbon; // Import Carbon for date handling
+use Illuminate\Support\Carbon;
+use Illuminate\Database\Eloquent\Model;
+use Saade\FilamentFullCalendar\Actions;
 
 class CalendarWidget extends FullCalendarWidget
 {
+    public Model|string|null $model = Event::class;
+
     // default view for the calendar on dashboard page
     // we want to show it on dedicated page
     public static function canView(): bool
     {
         return false;
+    }
+
+    protected function headerActions(): array
+    {
+        return [
+            Actions\CreateAction::make(),
+        ];
+    }
+
+    protected function modalActions(): array
+    {
+        return [
+            Actions\EditAction::make(),
+            Actions\DeleteAction::make(),
+        ];
+    }
+
+    public function getFormSchema(): array
+    {
+        return [
+            TextInput::make('title'),
+
+            Grid::make()
+                ->schema([
+                    DateTimePicker::make('start_at'),
+
+                    DateTimePicker::make('end_at'),
+                ]),
+        ];
     }
 
     /**
