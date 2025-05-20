@@ -2,10 +2,14 @@
 
 namespace App\Filament\Widgets;
 
+use App\Models\Event; // Import the Event model
 use Saade\FilamentFullCalendar\Widgets\FullCalendarWidget;
+use Illuminate\Support\Carbon; // Import Carbon for date handling
 
 class CalendarWidget extends FullCalendarWidget
 {
+    // default view for the calendar on dashboard page
+    // we want to show it on dedicated page
     public static function canView(): bool
     {
         return false;
@@ -17,33 +21,34 @@ class CalendarWidget extends FullCalendarWidget
      */
     public function fetchEvents(array $fetchInfo): array
     {
-        // You can use $fetchInfo to filter events by date.
-        // This method should return an array of event-like objects. See: https://github.com/saade/filament-fullcalendar/blob/3.x/#returning-events
-        // You can also return an array of EventData objects. See: https://github.com/saade/filament-fullcalendar/blob/3.x/#the-eventdata-class
-        return [
-            [
-                'id' => 1,
-                'title' => 'Sample Event 1',
-                'start' => now()->startOfWeek()->format('Y-m-d'),
-                'end' => now()->startOfWeek()->addDays(1)->format('Y-m-d'),
-                'url' => '#', // Optional: URL to navigate to when event is clicked
-                // 'shouldOpenUrlInNewTab' => true, // Optional: Whether to open the URL in a new tab
-            ],
-            [
-                'id' => 2,
-                'title' => 'Another Event',
-                'start' => now()->addDays(2)->format('Y-m-d H:i:s'),
-                'end' => now()->addDays(2)->addHours(2)->format('Y-m-d H:i:s'),
-                'backgroundColor' => 'red', // Optional: Background color
-                'borderColor' => 'red', // Optional: Border color
-            ],
-            [
-                'id' => 3,
-                'title' => 'Multi-day Event',
-                'start' => now()->addDays(5)->format('Y-m-d'),
-                'end' => now()->addDays(7)->format('Y-m-d'),
-            ]
-        ];
+        // Get the start and end dates from $fetchInfo to filter events
+        // These are usually Carbon objects or can be parsed into them.
+        $start = Carbon::parse($fetchInfo['start']);
+        $end = Carbon::parse($fetchInfo['end']);
+
+        return Event::query()
+            ->where('start_at', '>=', $start)
+            ->where('end_at', '<=', $end)
+            // Or, for events that might span across the range:
+            // ->where(function ($query) use ($start, $end) {
+            //     $query->where('start_at', '<=', $end)
+            //           ->where('end_at', '>=', $start);
+            // })
+            ->get()
+            ->map(function (Event $event) {
+                return [
+                    'id' => $event->id,
+                    'title' => $event->title,
+                    'start' => $event->start_at->toDateTimeString(), // Ensure correct format
+                    'end' => $event->end_at?->toDateTimeString(), // Ensure correct format, handle null for all-day
+                    'allDay' => $event->all_day,
+                    // You can add other properties like 'url', 'backgroundColor', 'borderColor' here
+                    // 'url' => route('filament.admin.resources.events.edit', $event), // Example URL
+                    // 'backgroundColor' => $event->color,
+                    // 'borderColor' => $event->color,
+                ];
+            })
+            ->all();
     }
 
     public function config(): array
