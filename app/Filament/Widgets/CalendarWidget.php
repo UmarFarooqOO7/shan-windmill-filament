@@ -92,6 +92,42 @@ class CalendarWidget extends FullCalendarWidget
     }
 
     /**
+     * Called when an event is dropped onto the calendar.
+     * The method signature must match the parent class.
+     */
+    public function onEventDrop(array $event, array $oldEvent, array $relatedEvents, array $delta, ?array $oldResource = null, ?array $newResource = null): bool
+    {
+        if ($this->record = $this->resolveRecord($event['id'])) {
+            $this->record->fill([
+                'start_at' => $event['start'],
+                'end_at' => $event['end'] ?? $this->record->end_at, // Use existing end_at if new one is null
+                'all_day' => $event['allDay'] ?? $this->record->all_day,
+            ]);
+            $this->record->save();
+        }
+        $this->dispatch('refreshCalendar');
+        return false; // Returning false prevents the default modal from opening
+    }
+
+    /**
+     * Called when an event is resized.
+     * The method signature must match the parent class.
+     */
+    public function onEventResize(array $event, array $oldEvent, array $relatedEvents, array $startDelta, array $endDelta): bool
+    {
+        if ($this->record = $this->resolveRecord($event['id'])) {
+            $this->record->fill([
+                'start_at' => $event['start'],
+                'end_at' => $event['end'] ?? $this->record->end_at, // Use existing end_at if new one is null
+            ]);
+            $this->record->save();
+        }
+        $this->dispatch('refreshCalendar');
+        return false; // Returning false prevents the default modal from opening
+    }
+
+
+    /**
      * FullCalendar will call this function whenever it needs new event data.
      * This is triggered when the user clicks prev/next or switches views on the calendar.
      */
