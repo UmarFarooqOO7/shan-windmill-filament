@@ -45,7 +45,18 @@ class CalendarWidget extends FullCalendarWidget
     protected function modalActions(): array
     {
         return [
-            Actions\EditAction::make(),
+            Actions\EditAction::make()
+                ->mountUsing(
+                    function (Event $record, Form $form, array $arguments) {
+                        $form->fill([
+                            'title' => $record->title,
+                            'start_at' => $arguments['event']['start'] ?? $record->start_at,
+                            'end_at' => $arguments['event']['end'] ?? $record->end_at,
+                            'description' => $record->description,
+                            'all_day' => $record->all_day,
+                        ]);
+                    }
+                ),
             Actions\DeleteAction::make(),
         ];
     }
@@ -120,6 +131,12 @@ class CalendarWidget extends FullCalendarWidget
     {
         return [
             'firstDay' => 1, // Monday
+            'initialView' => 'dayGridMonth', // show week by week
+            'headerToolbar' => [
+                'right' => 'dayGridMonth,timeGridWeek,timeGridDay,listWeek',
+                'center' => 'title',
+                'left' => 'prev,next today',
+            ],
         ];
     }
 
