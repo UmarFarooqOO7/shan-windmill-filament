@@ -3,9 +3,14 @@
 namespace App\Filament\Widgets;
 
 use App\Models\Event;
+use App\Models\User; // Import User model for Select options
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Grid;
+use Filament\Forms\Components\Textarea; // Import Textarea
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle; // Import Toggle
+use Filament\Forms\Components\Select; // Import Select
+use Filament\Forms\Form;
 use Saade\FilamentFullCalendar\Widgets\FullCalendarWidget;
 use Illuminate\Support\Carbon;
 use Illuminate\Database\Eloquent\Model;
@@ -25,7 +30,15 @@ class CalendarWidget extends FullCalendarWidget
     protected function headerActions(): array
     {
         return [
-            Actions\CreateAction::make(),
+            Actions\CreateAction::make()
+                ->mountUsing(
+                    function (Form $form, array $arguments) {
+                        $form->fill([
+                            'start_at' => $arguments['start'] ?? null,
+                            'end_at' => $arguments['end'] ?? null
+                        ]);
+                    }
+                )
         ];
     }
 
@@ -40,14 +53,30 @@ class CalendarWidget extends FullCalendarWidget
     public function getFormSchema(): array
     {
         return [
-            TextInput::make('title'),
+            TextInput::make('title')
+                ->label('Title')
+                ->required(),
 
-            Grid::make()
+            Grid::make(2) // Using a 2-column grid for start and end times
                 ->schema([
-                    DateTimePicker::make('start_at'),
+                    DateTimePicker::make('start_at')
+                        ->label('Start Date & Time')
+                        ->required(),
 
-                    DateTimePicker::make('end_at'),
+                    DateTimePicker::make('end_at')
+                        ->label('End Date & Time')
+                        ->nullable(),
                 ]),
+
+            Textarea::make('description')
+                ->label('Description')
+                ->nullable()
+                ->columnSpanFull(),
+
+            Toggle::make('all_day')
+                ->label('All-day event')
+                ->default(false)
+                ->columnSpanFull(), // Make toggle take full width if desired, or remove for default
         ];
     }
 
@@ -92,5 +121,15 @@ class CalendarWidget extends FullCalendarWidget
         return [
             'firstDay' => 1, // Monday
         ];
+    }
+
+    public function eventDidMount(): string
+    {
+        return <<<JS
+        function({ event, timeText, isStart, isEnd, isMirror, isPast, isFuture, isToday, el, view }){
+            el.setAttribute("x-tooltip", "tooltip");
+            el.setAttribute("x-data", "{ tooltip: '"+event.title+"' }");
+        }
+    JS;
     }
 }
