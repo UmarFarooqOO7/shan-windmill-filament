@@ -51,6 +51,7 @@ class LeadResource extends Resource
     {
         return [
             'index' => Pages\ManageLeads::route('/'),
+            'edit-page' => Pages\EditLeads::route('/edit-lead/{record}'),
         ];
     }
 }

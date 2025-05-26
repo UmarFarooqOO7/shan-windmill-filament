@@ -28,6 +28,8 @@ class EventFactory extends Factory
             'description' => $this->faker->paragraph(2),
             'all_day' => $allDay,
             'user_id' => User::factory() ?? User::first()?->id, // Assign to a new or existing user
+            'is_lead_setout' => false, // Add this line
+            'lead_id' => null, // Add this line
         ];
     }
 }

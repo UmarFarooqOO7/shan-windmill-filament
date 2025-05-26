@@ -3,8 +3,10 @@
 namespace App\Observers;
 
 use App\Models\Lead;
+use App\Models\Event; // Add this line
 use App\Services\LeadStatusNotificationService;
 use App\Services\StatusChangeApprovalService;
+use Illuminate\Support\Carbon; // Add this line
 
 class LeadObserver
 {
@@ -17,6 +19,14 @@ class LeadObserver
     ) {
         $this->notificationService = $notificationService;
         $this->approvalService = $approvalService;
+    }
+
+    /**
+     * Handle the Lead "created" event.
+     */
+    public function created(Lead $lead): void
+    {
+        $this->syncLeadSetoutEvent($lead);
     }
 
     /**
@@ -81,6 +91,8 @@ class LeadObserver
      */
     public function updated(Lead $lead): void
     {
+        $this->syncLeadSetoutEvent($lead);
+
         // Check if status_id has been changed - notify even for null values
         if ($lead->wasChanged('status_id')) {
             $this->notificationService->notifyStatusChange($lead, $lead->status_id, 'lead');
@@ -95,6 +107,61 @@ class LeadObserver
         if ($lead->wasChanged('writ_id')) {
             $this->notificationService->notifyStatusChange($lead, $lead->writ_id, 'writ');
         }
+    }
+
+    /**
+     * Handle the Lead "deleted" event.
+     */
+    public function deleted(Lead $lead): void
+    {
+        // Delete any associated setout event
+        if ($lead->setoutEvent) {
+            $lead->setoutEvent->delete();
+        }
+    }
+
+    /**
+     * Synchronize the setout event for the lead.
+     */
+    protected function syncLeadSetoutEvent(Lead $lead): void
+    {
+        // If setout_date is null, delete any existing setout event
+        if (is_null($lead->setout_date)) {
+            if ($lead->setoutEvent) {
+                $lead->setoutEvent->delete();
+            }
+            return;
+        }
+
+        // Prepare event data
+        $setoutDateTime = Carbon::parse($lead->setout_date);
+        if ($lead->setout_time) {
+            try {
+                $time = Carbon::parse($lead->setout_time);
+                $setoutDateTime->setTime($time->hour, $time->minute, $time->second);
+            } catch (\Exception $e) {
+                // Default to 9 AM if time is invalid
+                $setoutDateTime->startOfDay()->hour(9);
+            }
+        } else {
+            // Default to 9 AM if time is not set
+            $setoutDateTime->startOfDay()->hour(9);
+        }
+
+        $eventData = [
+            'title' => 'Setout: ' . ($lead->plaintiff ?? 'N/A') . ' vs ' . ($lead->defendant_first_name ?? 'N/A'),
+            'start_at' => $setoutDateTime,
+            'end_at' => $setoutDateTime, // Or adjust if setouts can have a duration
+            'all_day' => false,
+            'is_lead_setout' => true,
+            'user_id' => null, // Or assign a default user if applicable
+        ];
+
+        // Update or create the setout event
+        Event::updateOrCreate(
+            ['lead_id' => $lead->id, 'is_lead_setout' => true], // Find by lead_id and is_lead_setout flag
+            $eventData
+        );
     }
 
     /**

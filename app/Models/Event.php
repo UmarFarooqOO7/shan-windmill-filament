@@ -22,6 +22,8 @@ class Event extends Model
         'description',
         'all_day',
         'user_id',
+        'lead_id', // Add lead_id
+        'is_lead_setout', // Add is_lead_setout
     ];
 
     /**
@@ -41,5 +43,13 @@ class Event extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * Get the lead associated with the event (if any).
+     */
+    public function lead(): BelongsTo
+    {
+        return $this->belongsTo(Lead::class);
     }
 }

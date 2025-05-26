@@ -3,18 +3,19 @@
 namespace App\Filament\Widgets;
 
 use App\Models\Event;
-use App\Models\User; // Import User model for Select options
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Grid;
 use Filament\Forms\Components\Textarea; // Import Textarea
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle; // Import Toggle
-use Filament\Forms\Components\Select; // Import Select
 use Filament\Forms\Form;
 use Saade\FilamentFullCalendar\Widgets\FullCalendarWidget;
 use Illuminate\Support\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Saade\FilamentFullCalendar\Actions;
+use App\Filament\Resources\LeadResource;
+use Filament\Notifications\Notification;
+use Illuminate\Support\Arr; // Added import
 
 class CalendarWidget extends FullCalendarWidget
 {
@@ -50,8 +51,8 @@ class CalendarWidget extends FullCalendarWidget
                     function (Event $record, Form $form, array $arguments) {
                         $form->fill([
                             'title' => $record->title,
-                            'start_at' => $arguments['event']['start'] ?? $record->start_at,
-                            'end_at' => $arguments['event']['end'] ?? $record->end_at,
+                            'start_at' => Arr::get($arguments, 'event.start', $record->start_at),
+                            'end_at' => Arr::get($arguments, 'event.end', $record->end_at),
                             'description' => $record->description,
                             'all_day' => $record->all_day,
                         ]);
@@ -105,6 +106,18 @@ class CalendarWidget extends FullCalendarWidget
             ]);
             $this->record->save();
         }
+
+        // show a notification that the event was moved
+        Notification::make()
+            ->success()
+            ->title('Event Moved')
+            ->body(sprintf(
+                'The event has been successfully moved from %s to %s.',
+                Carbon::parse($oldEvent['start'])->format('M d, Y g:ia'),
+                Carbon::parse($event['start'])->format('M d, Y g:ia')
+            ))
+            ->send();
+
         $this->dispatch('refreshCalendar');
         return false; // Returning false prevents the default modal from opening
     }
@@ -122,7 +135,20 @@ class CalendarWidget extends FullCalendarWidget
             ]);
             $this->record->save();
         }
+
+        // show a notification that the event was resized
+        Notification::make()
+            ->success()
+            ->title('Event Resized')
+            ->body(sprintf(
+                'The event has been successfully resized from %s to %s.',
+                Carbon::parse($oldEvent['start'])->format('M d, Y g:ia'),
+                Carbon::parse($event['end'])->format('M d, Y g:ia')
+            ))
+            ->send();
+
         $this->dispatch('refreshCalendar');
+
         return false; // Returning false prevents the default modal from opening
     }
 
@@ -133,31 +159,38 @@ class CalendarWidget extends FullCalendarWidget
      */
     public function fetchEvents(array $fetchInfo): array
     {
-        // Get the start and end dates from $fetchInfo to filter events
-        // These are usually Carbon objects or can be parsed into them.
         $start = Carbon::parse($fetchInfo['start']);
         $end = Carbon::parse($fetchInfo['end']);
 
         return Event::query()
-            ->where('start_at', '>=', $start)
-            ->where('end_at', '<=', $end)
-            // Or, for events that might span across the range:
-            // ->where(function ($query) use ($start, $end) {
-            //     $query->where('start_at', '<=', $end)
-            //           ->where('end_at', '>=', $start);
-            // })
+            ->where('start_at', '<=', $end) // Event starts before or at view_end
+            ->where(function ($query) use ($start) {
+                $query->where('end_at', '>=', $start) // Event ends after or at view_start
+                    ->orWhere(function ($q) use ($start) { // Or, event has no end_at (e.g. all_day on start_at) AND its start_at is within view
+                        $q->whereNull('end_at')
+                            ->where('start_at', '>=', $start);
+                    });
+            })
             ->get()
             ->map(function (Event $event) {
                 return [
                     'id' => $event->id,
                     'title' => $event->title,
-                    'start' => $event->start_at->toDateTimeString(), // Ensure correct format
-                    'end' => $event->end_at?->toDateTimeString(), // Ensure correct format, handle null for all-day
+                    'start' => $event->start_at->toDateTimeString(),
+                    'end' => $event->end_at?->toDateTimeString(),
                     'allDay' => $event->all_day,
-                    // You can add other properties like 'url', 'backgroundColor', 'borderColor' here
-                    // 'url' => route('filament.admin.resources.events.edit', $event), // Example URL
-                    // 'backgroundColor' => $event->color,
-                    // 'borderColor' => $event->color,
+                    'backgroundColor' => $event->is_lead_setout ? '#10B981' : '#3B82F6', // Green for lead, blue for normal
+                    'borderColor' => $event->is_lead_setout ? '#059669' : '#2563EB', // Darker green border for lead, darker blue for normal
+                    'editable' => !$event->is_lead_setout, // Prevent dragging/resizing for lead setout events
+                    'extendedProps' => [
+                        'is_lead_setout' => $event->is_lead_setout,
+                        'lead_id' => $event->lead_id,
+                    ],
+                    // Only add URL properties for lead setout events
+                    ...$event->is_lead_setout ? [
+                        'url' => LeadResource::getUrl(name: 'edit-page', parameters: ['record' => $event->lead_id]),
+                        'shouldOpenUrlInNewTab' => true,
+                    ] : [],
                 ];
             })
             ->all();
@@ -167,12 +200,14 @@ class CalendarWidget extends FullCalendarWidget
     {
         return [
             'firstDay' => 1, // Monday
-            'initialView' => 'dayGridMonth', // show week by week
+            'initialView' => 'dayGridMonth',
             'headerToolbar' => [
                 'right' => 'dayGridMonth,timeGridWeek,timeGridDay,listWeek',
                 'center' => 'title',
                 'left' => 'prev,next today',
             ],
+            'editable' => true, // Global editable, individual events can override
+            'selectable' => true, // Allows date clicking/selecting for creating events
         ];
     }
 
@@ -184,5 +219,22 @@ class CalendarWidget extends FullCalendarWidget
             el.setAttribute("x-data", "{ tooltip: '"+event.title+"' }");
         }
     JS;
+    }
+
+    /**
+     * Triggered when the user clicks an event.
+     * @param array $event An Event Object that holds information about the event (date, title, etc).
+     * @return void
+     */
+    public function onEventClick(array $event): void
+    {
+        if ($this->getModel()) {
+            $this->record = $this->resolveRecord($event['id']);
+        }
+
+        $this->mountAction('view', [
+            'type' => 'click',
+            'event' => $event,
+        ]);
     }
 }
