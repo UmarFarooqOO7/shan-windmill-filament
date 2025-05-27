@@ -31,6 +31,17 @@ class EventObserver
             Log::warning('[EventObserver] No authenticated user to set user_id on creating event ID: ' . ($event->id ?? 'new'));
         }
     }
+    /**
+     * Handle the Event "updating" event.
+     */
+    public function updating(Event $event): void
+    {
+        if (Auth::check() && !$event->user_id) {
+            $event->user_id = Auth::id();
+        } else if (!$event->user_id) {
+            Log::warning('[EventObserver] No authenticated user to set user_id on updating event ID: ' . ($event->id ?? 'new'));
+        }
+    }
 
     /**
      * Handle the Event "created" event.
@@ -90,7 +101,7 @@ class EventObserver
                 });
             }
         } catch (\Exception $e) {
-            Log::error('[EventObserver] Exception during Google Calendar event creation for local event ID: ' . $event->id . ' - User ID: ' . $user->id . ' - Message: ' . $e->getMessage(), ['exception_trace' => $e->getTraceAsString()]);
+            Log::error('[EventObserver] Exception during Google Calendar event creation for local event ID: ' . $event->id . ' - User ID: ' . $user->id . ' - Message: ' . $e->getMessage());
         }
     }
 
@@ -107,7 +118,7 @@ class EventObserver
         }
 
         if (!$user->google_access_token) {
-            // Log::warning('[EventObserver] User ID: ' . $user->id . ' does not have a Google access token. Skipping Google Calendar update for event ID: ' . $event->id);
+            Log::warning('[EventObserver] User ID: ' . $user->id . ' does not have a Google access token. Skipping Google Calendar update for event ID: ' . $event->id);
             return;
         }
 
@@ -170,16 +181,19 @@ class EventObserver
      */
     public function deleted(Event $event): void
     {
+        // log information about the deletion
+        Log::info('[EventObserver] Deleting event ID: ' . $event->id . ' from local database and Google Calendar if applicable.');
+
         $user = $event->user;
 
         if (!$user) {
-            // Log::warning('[EventObserver] User not found for event ID: ' . $event->id . ' during delete. Cannot delete Google Calendar event.');
+            Log::warning('[EventObserver] User not found for event ID: ' . $event->id . ' during delete. Cannot delete Google Calendar event.');
             // If user is null, it might be a cleanup process or an event not tied to a specific user's calendar.
             return;
         }
 
         if (!$user->google_access_token || !$event->google_calendar_event_id) {
-            // Log::warning('[EventObserver] Skipping Google Calendar event deletion for local event ID: ' . $event->id . '. Missing token or Google Event ID.');
+            Log::warning('[EventObserver] Skipping Google Calendar event deletion for local event ID: ' . $event->id . '. Missing token or Google Event ID.');
             return;
         }
 
@@ -194,10 +208,10 @@ class EventObserver
             if ($e->getCode() == 404) {
                 Log::warning('[EventObserver] Google Calendar event not found (404) during deletion. Google Event ID: ' . $event->google_calendar_event_id . '. Ignoring.');
             } else {
-                Log::error('[EventObserver] Google Service Exception during Google Calendar event deletion for Google Event ID: ' . $event->google_calendar_event_id . ' - Message: ' . $e->getMessage(), ['exception_trace' => $e->getTraceAsString()]);
+                Log::error('[EventObserver] Google Service Exception during Google Calendar event deletion for Google Event ID: ' . $event->google_calendar_event_id . ' - Message: ' . $e->getMessage());
             }
         } catch (\Exception $e) {
-            Log::error('[EventObserver] Exception during Google Calendar event deletion for Google Event ID: ' . $event->google_calendar_event_id . ' - User ID: ' . $user->id . ' - Message: ' . $e->getMessage(), ['exception_trace' => $e->getTraceAsString()]);
+            Log::error('[EventObserver] Exception during Google Calendar event deletion for Google Event ID: ' . $event->google_calendar_event_id . ' - User ID: ' . $user->id . ' - Message: ' . $e->getMessage());
         }
     }
 }

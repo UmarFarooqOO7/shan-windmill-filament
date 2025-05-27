@@ -30,6 +30,36 @@ class CalendarWidget extends FullCalendarWidget
         return false;
     }
 
+    public function getFormSchema(): array
+    {
+        return [
+            TextInput::make('title')
+                ->label('Title')
+                ->required(),
+
+            Grid::make(2) // Using a 2-column grid for start and end times
+                ->schema([
+                    DateTimePicker::make('start_at')
+                        ->label('Start Date & Time')
+                        ->required(),
+
+                    DateTimePicker::make('end_at')
+                        ->label('End Date & Time')
+                        ->nullable(),
+                ]),
+
+            Textarea::make('description')
+                ->label('Description')
+                ->nullable()
+                ->columnSpanFull(),
+
+            Toggle::make('all_day')
+                ->label('All-day event')
+                ->default(false)
+                ->columnSpanFull(), // Make toggle take full width if desired, or remove for default
+        ];
+    }
+
     protected function headerActions(): array
     {
         $user = Auth::user();
@@ -51,7 +81,7 @@ class CalendarWidget extends FullCalendarWidget
             if (!$user->google_access_token) {
                 $googleCalendarActions[] = Action::make('connectGoogleCalendar')
                     ->label('Connect Google Calendar')
-                    ->action(fn () => redirect(url('/google-auth')))
+                    ->action(fn() => redirect(url('/google-auth')))
                     ->icon('heroicon-o-link');
             } else {
                 // Only show Disconnect button if connected
@@ -60,24 +90,10 @@ class CalendarWidget extends FullCalendarWidget
                     ->color('danger')
                     ->icon('heroicon-o-x-circle')
                     ->requiresConfirmation()
-                    ->action(fn () => redirect(url('/google-disconnect')));
+                    ->action(fn() => redirect(url('/google-disconnect')));
             }
         }
         return array_merge($googleCalendarActions, $defaultCalendarActions);
-    }
-
-    protected function getListeners()
-    {
-        return [
-            'submitForm' => 'submitFormUsingJavaScript',
-        ];
-    }
-
-    public function submitFormUsingJavaScript(array $data)
-    {
-        // Dispatch a browser event that JavaScript can listen to.
-        // Ensure you have the corresponding JS in your main layout or a script tag.
-        $this->dispatchBrowserEvent('submit-form-via-js', $data);
     }
 
     /**

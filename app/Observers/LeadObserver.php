@@ -8,6 +8,7 @@ use App\Services\LeadStatusNotificationService;
 use App\Services\StatusChangeApprovalService;
 use Illuminate\Support\Carbon; // Add this line
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 
 class LeadObserver
 {
@@ -111,13 +112,34 @@ class LeadObserver
     }
 
     /**
-     * Handle the Lead "deleted" event.
+     * Handle the Lead "deleting" event.
+     * This method is called BEFORE the lead is actually deleted from the database.
+     * We use this to delete associated events, which will in turn trigger
+     * the EventObserver to remove them from Google Calendar.
      */
-    public function deleted(Lead $lead): void
+    public function deleting(Lead $lead): void
     {
-        // Delete any associated setout event
-        if ($lead->setoutEvent) {
-            $lead->setoutEvent->delete();
+        // Log::info('Lead deleting hook: Attempting to delete associated events.', ['lead_id' => $lead->id]);
+
+        // Find and delete all events associated with this lead
+        $events = Event::where('lead_id', $lead->id)->get();
+
+        if ($events->isNotEmpty()) {
+            // Log::info('Lead deleting hook: Found events to delete.', [
+            //     'lead_id' => $lead->id,
+            //     'event_ids' => $events->pluck('id')->toArray()
+            // ]);
+            foreach ($events as $event) {
+                // Log::info('Lead deleting hook: Deleting event.', [
+                //     'lead_id' => $lead->id,
+                //     'event_id' => $event->id
+                // ]);
+                // Deleting the event here will trigger the EventObserver's "deleted" hook
+                // which should handle the Google Calendar event deletion.
+                $event->delete();
+            }
+        } else {
+            // Log::info('Lead deleting hook: No associated events found to delete.', ['lead_id' => $lead->id]);
         }
     }
 
