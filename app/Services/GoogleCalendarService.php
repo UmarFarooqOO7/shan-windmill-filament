@@ -77,6 +77,20 @@ class GoogleCalendarService
         }
     }
 
+    public function disconnectUser(User $user): bool
+    {
+        $user->google_access_token = null;
+        $user->google_refresh_token = null;
+        $user->google_token_expires_at = null;
+
+        if ($user->save()) {
+            Log::info('[GoogleCalendarService] Successfully disconnected Google Calendar for user ID: ' . $user->id);
+            return true;
+        }
+        Log::error('[GoogleCalendarService] Failed to save user model while disconnecting Google Calendar for user ID: ' . $user->id);
+        return false;
+    }
+
     public function getGoogleClientForUser(User $user): Google_Client
     {
         if (!$user->google_access_token) {

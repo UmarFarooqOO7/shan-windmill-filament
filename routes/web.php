@@ -47,3 +47,11 @@ Route::get('/oauth2callback', function (Request $request, GoogleCalendarService 
     }
 })->name('oauth2callback');
 
+Route::get('/google-disconnect', function (Request $request, GoogleCalendarService $googleCalendarService) {
+    $user = Auth::user();
+    if ($user && $googleCalendarService->disconnectUser($user)) {
+        return redirect()->to('/admin/calendar')->with('status', 'Successfully disconnected from Google Calendar.');
+    }
+    return redirect()->to('/admin/calendar')->with('error', 'Failed to disconnect from Google Calendar.');
+})->name('google-disconnect')->middleware('auth'); // Ensure only authenticated users can access
+

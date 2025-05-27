@@ -51,85 +51,33 @@ class CalendarWidget extends FullCalendarWidget
             if (!$user->google_access_token) {
                 $googleCalendarActions[] = Action::make('connectGoogleCalendar')
                     ->label('Connect Google Calendar')
-                    // ->url(url('/google-auth')) // Previous method
-                    ->action(fn () => redirect(url('/google-auth'))) // New method: server-side redirect
+                    ->action(fn () => redirect(url('/google-auth')))
                     ->icon('heroicon-o-link');
             } else {
-                $googleCalendarActions[] = Action::make('googleCalendarConnected')
-                    ->label('Google Calendar Connected')
-                    ->color('success')
-                    ->disabled()
-                    ->icon('heroicon-o-check-circle');
-                // Placeholder for Disconnect functionality
-                // To implement disconnect:
-                // 1. Create a route e.g., /google-disconnect
-                // 2. Create a method in GoogleCalendarService to clear user's Google tokens
-                // 3. Update this action to call that route/method
-                /*
+                // Only show Disconnect button if connected
                 $googleCalendarActions[] = Action::make('disconnectGoogleCalendar')
                     ->label('Disconnect Google Calendar')
                     ->color('danger')
                     ->icon('heroicon-o-x-circle')
                     ->requiresConfirmation()
-                    ->action(function () {
-                        // Example: app(GoogleCalendarService::class)->disconnectUser(Auth::user());
-                        // Notification::make()->success()->title('Disconnected from Google Calendar')->send();
-                        // return redirect()->refresh(); // Or use $this->dispatch('refreshPage');
-                        Notification::make()->warning()->title('Disconnect Not Implemented')->body('This functionality is not yet active.')->send();
-                    });
-                */
+                    ->action(fn () => redirect(url('/google-disconnect')));
             }
         }
         return array_merge($googleCalendarActions, $defaultCalendarActions);
     }
 
-    protected function modalActions(): array
+    protected function getListeners()
     {
         return [
-            Actions\EditAction::make()
-                ->mountUsing(
-                    function (Event $record, Form $form, array $arguments) {
-                        $form->fill([
-                            'title' => $record->title,
-                            'start_at' => Arr::get($arguments, 'event.start', $record->start_at),
-                            'end_at' => Arr::get($arguments, 'event.end', $record->end_at),
-                            'description' => $record->description,
-                            'all_day' => $record->all_day,
-                        ]);
-                    }
-                ),
-            Actions\DeleteAction::make(),
+            'submitForm' => 'submitFormUsingJavaScript',
         ];
     }
 
-    public function getFormSchema(): array
+    public function submitFormUsingJavaScript(array $data)
     {
-        return [
-            TextInput::make('title')
-                ->label('Title')
-                ->required(),
-
-            Grid::make(2) // Using a 2-column grid for start and end times
-                ->schema([
-                    DateTimePicker::make('start_at')
-                        ->label('Start Date & Time')
-                        ->required(),
-
-                    DateTimePicker::make('end_at')
-                        ->label('End Date & Time')
-                        ->nullable(),
-                ]),
-
-            Textarea::make('description')
-                ->label('Description')
-                ->nullable()
-                ->columnSpanFull(),
-
-            Toggle::make('all_day')
-                ->label('All-day event')
-                ->default(false)
-                ->columnSpanFull(), // Make toggle take full width if desired, or remove for default
-        ];
+        // Dispatch a browser event that JavaScript can listen to.
+        // Ensure you have the corresponding JS in your main layout or a script tag.
+        $this->dispatchBrowserEvent('submit-form-via-js', $data);
     }
 
     /**
