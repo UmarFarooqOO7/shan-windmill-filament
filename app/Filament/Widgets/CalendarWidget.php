@@ -12,10 +12,12 @@ use Filament\Forms\Form;
 use Saade\FilamentFullCalendar\Widgets\FullCalendarWidget;
 use Illuminate\Support\Carbon;
 use Illuminate\Database\Eloquent\Model;
-use Saade\FilamentFullCalendar\Actions;
+use Saade\FilamentFullCalendar\Actions; // This is for Saade's specific calendar actions
 use App\Filament\Resources\LeadResource;
 use Filament\Notifications\Notification;
 use Illuminate\Support\Arr; // Added import
+use Filament\Actions\Action; // Added for general Filament actions
+use Illuminate\Support\Facades\Auth; // Added for checking user authentication
 
 class CalendarWidget extends FullCalendarWidget
 {
@@ -30,8 +32,11 @@ class CalendarWidget extends FullCalendarWidget
 
     protected function headerActions(): array
     {
-        return [
-            Actions\CreateAction::make()
+        $user = Auth::user();
+        $googleCalendarActions = [];
+
+        $defaultCalendarActions = [
+            Actions\CreateAction::make() // This is Saade\FilamentFullCalendar\Actions\CreateAction
                 ->mountUsing(
                     function (Form $form, array $arguments) {
                         $form->fill([
@@ -41,6 +46,41 @@ class CalendarWidget extends FullCalendarWidget
                     }
                 )
         ];
+
+        if ($user) {
+            if (!$user->google_access_token) {
+                $googleCalendarActions[] = Action::make('connectGoogleCalendar')
+                    ->label('Connect Google Calendar')
+                    // ->url(url('/google-auth')) // Previous method
+                    ->action(fn () => redirect(url('/google-auth'))) // New method: server-side redirect
+                    ->icon('heroicon-o-link');
+            } else {
+                $googleCalendarActions[] = Action::make('googleCalendarConnected')
+                    ->label('Google Calendar Connected')
+                    ->color('success')
+                    ->disabled()
+                    ->icon('heroicon-o-check-circle');
+                // Placeholder for Disconnect functionality
+                // To implement disconnect:
+                // 1. Create a route e.g., /google-disconnect
+                // 2. Create a method in GoogleCalendarService to clear user's Google tokens
+                // 3. Update this action to call that route/method
+                /*
+                $googleCalendarActions[] = Action::make('disconnectGoogleCalendar')
+                    ->label('Disconnect Google Calendar')
+                    ->color('danger')
+                    ->icon('heroicon-o-x-circle')
+                    ->requiresConfirmation()
+                    ->action(function () {
+                        // Example: app(GoogleCalendarService::class)->disconnectUser(Auth::user());
+                        // Notification::make()->success()->title('Disconnected from Google Calendar')->send();
+                        // return redirect()->refresh(); // Or use $this->dispatch('refreshPage');
+                        Notification::make()->warning()->title('Disconnect Not Implemented')->body('This functionality is not yet active.')->send();
+                    });
+                */
+            }
+        }
+        return array_merge($googleCalendarActions, $defaultCalendarActions);
     }
 
     protected function modalActions(): array
@@ -213,12 +253,12 @@ class CalendarWidget extends FullCalendarWidget
 
     public function eventDidMount(): string
     {
-        return <<<JS
+        return <<<'JS'
         function({ event, timeText, isStart, isEnd, isMirror, isPast, isFuture, isToday, el, view }){
             el.setAttribute("x-tooltip", "tooltip");
-            el.setAttribute("x-data", "{ tooltip: '"+event.title+"' }");
+            el.setAttribute("x-data", "{ tooltip: '" + event.title.replace(/'/g, "\\'") + "' }");
         }
-    JS;
+JS;
     }
 
     /**

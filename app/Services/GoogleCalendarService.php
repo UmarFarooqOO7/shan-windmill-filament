@@ -8,6 +8,9 @@ use Carbon\Carbon;
 use Google\Service\Calendar;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
+use App\Models\Event; // Added for fetching events
+use App\Observers\EventObserver; // Added for syncing events
+use Illuminate\Support\Facades\Log; // Added for logging
 
 class GoogleCalendarService
 {
@@ -39,9 +42,39 @@ class GoogleCalendarService
                 $user->google_refresh_token = $token['refresh_token'];
             }
             $user->google_token_expires_at = Carbon::now()->addSeconds($token['expires_in']);
-            return $user->save();
+            $saved = $user->save();
+            if ($saved) {
+                // After successfully saving the token, sync existing events
+                $this->syncUserEventsToGoogle($user);
+            }
+            return $saved;
         }
         return false;
+    }
+
+    public function syncUserEventsToGoogle(User $user): void
+    {
+        if (!$user->google_access_token) {
+            Log::warning('[GoogleCalendarService] Cannot sync events: User ID ' . $user->id . ' does not have a Google access token.');
+            return;
+        }
+
+        $eventsToSync = Event::where('user_id', $user->id)
+                             ->whereNull('google_calendar_event_id')
+                             ->get();
+
+        if ($eventsToSync->isNotEmpty()) {
+            $eventObserver = app(EventObserver::class);
+            foreach ($eventsToSync as $event) {
+                try {
+                    // Ensure the event has a user relationship loaded if observer relies on it directly
+                    // $event->loadMissing('user'); // This might not be necessary if observer re-fetches or uses passed user
+                    $eventObserver->created($event); // This will attempt to create the event on Google Calendar
+                } catch (\Exception $e) {
+                    Log::error('[GoogleCalendarService] Failed to sync event ID: ' . $event->id . ' to Google Calendar for user ID: ' . $user->id . '. Error: ' . $e->getMessage(), ['exception_trace' => $e->getTraceAsString()]);
+                }
+            }
+        }
     }
 
     public function getGoogleClientForUser(User $user): Google_Client

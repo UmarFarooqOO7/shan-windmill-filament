@@ -2,12 +2,12 @@
 
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
-use Carbon\Carbon;
-use App\Services\GoogleCalendarService; // Add this line
-use Illuminate\Http\Request; // Add this line
+use App\Services\GoogleCalendarService;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log; // Keep for logging potential errors
 
 Route::get('/', function () {
-    return view('welcome');
+    return redirect()->to('/admin/calendar');
 });
 
 // Route for printing leads
@@ -25,18 +25,25 @@ Route::get('/print-leads', function () {
     ]);
 })->name('print-leads');
 
-// routes/web.php
-Route::get('/google-auth', function (GoogleCalendarService $calendarService) { // Inject service
+
+Route::get('/google-auth', function (GoogleCalendarService $calendarService) {
     $authUrl = $calendarService->getAuthUrl();
     return redirect($authUrl);
-})->name('google-auth'); // Added name for route
+})->name('google-auth');
 
-Route::get('/oauth2callback', function (Request $request, GoogleCalendarService $calendarService) { // Inject service and request
-    if ($calendarService->handleOAuthCallback($request)) {
-        $user = Auth::user();
-        return 'Token saved for user: ' . $user->email; // User is already fetched in service
+Route::get('/oauth2callback', function (Request $request, GoogleCalendarService $googleCalendarService) {
+    if ($googleCalendarService->handleOAuthCallback($request)) {
+        // The sync logic is now inside handleOAuthCallback in the service
+        // Redirect to the main calendar page
+        return redirect()->to('/admin/calendar')->with('status', 'Successfully connected to Google Calendar and initiated event sync!');
     } else {
-        return 'Failed to save token or no authenticated user.';
+        // Token save failed or user denied access, or no authenticated user after callback
+        $user = Auth::user();
+        if (!$user) {
+            Log::error('OAuth callback failed or no authenticated user found after attempting token save.');
+            return redirect()->to('/admin/login')->with('error', 'Authentication session issue after Google OAuth. Please try logging in again.');
+        }
+        return redirect()->to('/admin/calendar')->with('error', 'Failed to connect to Google Calendar. Please try again.');
     }
-})->name('oauth2callback'); // Added name for route
+})->name('oauth2callback');
 
