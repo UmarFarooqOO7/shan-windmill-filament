@@ -7,6 +7,7 @@ use App\Models\Event; // Add this line
 use App\Services\LeadStatusNotificationService;
 use App\Services\StatusChangeApprovalService;
 use Illuminate\Support\Carbon; // Add this line
+use Illuminate\Support\Facades\Auth;
 
 class LeadObserver
 {
@@ -154,7 +155,7 @@ class LeadObserver
             'end_at' => $setoutDateTime, // Or adjust if setouts can have a duration
             'all_day' => false,
             'is_lead_setout' => true,
-            'user_id' => null, // Or assign a default user if applicable
+            'user_id' => Auth::id(),
         ];
 
         // Update or create the setout event

@@ -24,6 +24,7 @@ class Event extends Model
         'user_id',
         'lead_id', // Add lead_id
         'is_lead_setout', // Add is_lead_setout
+        'google_calendar_event_id', // Add this line
     ];
 
     /**

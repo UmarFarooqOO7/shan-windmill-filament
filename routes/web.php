@@ -1,6 +1,10 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Auth;
+use Carbon\Carbon;
+use App\Services\GoogleCalendarService; // Add this line
+use Illuminate\Http\Request; // Add this line
 
 Route::get('/', function () {
     return view('welcome');
@@ -22,32 +26,17 @@ Route::get('/print-leads', function () {
 })->name('print-leads');
 
 // routes/web.php
-Route::get('/google-auth', function () {
-    $client = new \Google_Client();
-    $client->setAuthConfig(storage_path('app/google-calendar/credentials.json'));
-    $client->setScopes([\Google_Service_Calendar::CALENDAR]);
-    $client->setAccessType('offline');
-    $client->setPrompt('consent');
-    $client->setRedirectUri('http://127.0.0.1:8000/oauth2callback'); // Adjust this to your redirect URI
-
-    $authUrl = $client->createAuthUrl();
+Route::get('/google-auth', function (GoogleCalendarService $calendarService) { // Inject service
+    $authUrl = $calendarService->getAuthUrl();
     return redirect($authUrl);
-});
+})->name('google-auth'); // Added name for route
 
-use Illuminate\Support\Facades\Storage;
-
-Route::get('/oauth2callback', function (Illuminate\Http\Request $request) {
-    $client = new \Google_Client();
-    $client->setAuthConfig(storage_path('app/google-calendar/credentials.json'));
-    $client->setRedirectUri('http://127.0.0.1:8000/oauth2callback');
-    $client->setScopes([\Google_Service_Calendar::CALENDAR]);
-    $client->setAccessType('offline');
-
-    $token = $client->fetchAccessTokenWithAuthCode($request->get('code'));
-
-    // Save the token for future use
-    Storage::put('google-calendar/token.json', json_encode($token));
-
-    return 'Token saved!';
-});
+Route::get('/oauth2callback', function (Request $request, GoogleCalendarService $calendarService) { // Inject service and request
+    if ($calendarService->handleOAuthCallback($request)) {
+        $user = Auth::user();
+        return 'Token saved for user: ' . $user->email; // User is already fetched in service
+    } else {
+        return 'Failed to save token or no authenticated user.';
+    }
+})->name('oauth2callback'); // Added name for route
 
