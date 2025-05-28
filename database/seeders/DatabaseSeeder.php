@@ -22,7 +22,8 @@ class DatabaseSeeder extends Seeder
         ]);
 
         $this->call([
-            StatusSeeder::class
+            StatusSeeder::class,
+            EventSeeder::class, // Add EventSeeder to the list
         ]);
     }
 }

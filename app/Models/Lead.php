@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use App\Models\Event;
 
 class Lead extends Model
 {
@@ -83,5 +84,10 @@ class Lead extends Model
         return $this->statusChangeApprovals()
             ->whereNull('approved_at')
             ->whereNull('rejected_at');
+    }
+
+    public function setoutEvent()
+    {
+        return $this->hasOne(Event::class)->where('is_lead_setout', true);
     }
 }

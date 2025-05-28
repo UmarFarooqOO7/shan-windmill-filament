@@ -2,7 +2,9 @@
 
 namespace App\Providers;
 
+use App\Models\Event;
 use App\Models\Lead;
+use App\Observers\EventObserver;
 use App\Observers\LeadObserver;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\ServiceProvider;
@@ -25,6 +27,7 @@ class AppServiceProvider extends ServiceProvider
     {
         // Register Lead model observer
         Lead::observe(LeadObserver::class);
+        Event::observe(EventObserver::class);
 
         // Remove ONLY_FULL_GROUP_BY from SQL mode
         DB::statement("SET SQL_MODE=''");
