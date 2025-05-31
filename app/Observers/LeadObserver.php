@@ -9,6 +9,9 @@ use App\Services\StatusChangeApprovalService;
 use Illuminate\Support\Carbon; // Add this line
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use App\Mail\NewLeadCreatedEmail; // Added for email notification
+use App\Models\User; // Added for fetching admin users
+use Illuminate\Support\Facades\Mail; // Added for sending mail
 
 class LeadObserver
 {
@@ -29,6 +32,16 @@ class LeadObserver
     public function created(Lead $lead): void
     {
         $this->syncLeadSetoutEvent($lead);
+
+        // Send email notification to admin users
+        $adminUsers = User::where('is_admin', true)->get();
+        foreach ($adminUsers as $admin) {
+            try {
+                Mail::to($admin->email)->send(new NewLeadCreatedEmail($lead));
+            } catch (\Exception $e) {
+                Log::error("Failed to send NewLeadCreatedEmail to admin {$admin->email} for lead {$lead->id}: " . $e->getMessage());
+            }
+        }
     }
 
     /**
@@ -177,7 +190,7 @@ class LeadObserver
             'end_at' => $setoutDateTime, // Or adjust if setouts can have a duration
             'all_day' => false,
             'is_lead_setout' => true,
-            'user_id' => Auth::id(),
+            'user_id' => Auth::id(), // This line might cause issues if Auth::id() is null in a queued job context
         ];
 
         // Update or create the setout event
@@ -198,19 +211,25 @@ class LeadObserver
         }
 
         $statusTypeLabel = ucfirst($statusType);
+        $statusName = $lead->{$statusType . '_status'} ? $lead->{$statusType . '_status'}->name : 'N/A'; // Assuming relation like lead_status, setout_status
 
         \Filament\Notifications\Notification::make()
-            ->title("Status Change Pending Approval")
-            ->body("Your request to change the {$statusTypeLabel} status for Lead #{$lead->id} requires admin approval. You'll be notified once it's approved or rejected.")
+            ->title("{$statusTypeLabel} Status Change Pending Approval")
+            ->body("Your request to change the {$statusTypeLabel} status for Lead #{$lead->id} ({$lead->plaintiff}) to '{$statusName}' requires admin approval.")
             ->warning()
-            ->send();
+            ->sendToDatabase($user);
     }
 
     /**
-     * Get the form data
+     * Get form data from the request.
+     * This is a helper to abstract how form data is retrieved, especially for observers.
      */
-    private function getFormData(): array
+    protected function getFormData(): array
     {
-        return request()->all();
+        // Attempt to get data from the current request if available
+        if (request() && request()->all()) {
+            return request()->all();
+        }
+        return [];
     }
 }
