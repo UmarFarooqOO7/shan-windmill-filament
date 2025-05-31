@@ -165,8 +165,30 @@ class CalendarWidget extends FullCalendarWidget
     {
         $start = Carbon::parse($fetchInfo['start']);
         $end = Carbon::parse($fetchInfo['end']);
+        $user = Auth::user(); // Get the authenticated user
+
+        if (!$user) {
+            return []; // No user, no events
+        }
+
+        // Get IDs of teams the user belongs to
+        $userTeamIds = $user->teams()->pluck('teams.id')->toArray();
 
         return Event::query()
+            ->where(function ($query) use ($user, $userTeamIds) {
+                // Condition 1: Event is directly assigned to the user
+                $query->where('user_id', $user->id);
+
+                // Condition 2: Event is linked to a Lead that belongs to one of the user's teams
+                if (!empty($userTeamIds)) {
+                    $query->orWhereHas('lead', function ($leadQuery) use ($userTeamIds) {
+                        // Check if the lead is associated with any of the user's teams
+                        $leadQuery->whereHas('teams', function ($teamQuery) use ($userTeamIds) {
+                            $teamQuery->whereIn('teams.id', $userTeamIds);
+                        });
+                    });
+                }
+            })
             ->where('start_at', '<=', $end) // Event starts before or at view_end
             ->where(function ($query) use ($start) {
                 $query->where('end_at', '>=', $start) // Event ends after or at view_start
