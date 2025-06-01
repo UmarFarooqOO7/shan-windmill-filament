@@ -2,14 +2,17 @@
 
 namespace App\Filament\Resources\LeadResource\Forms;
 
-use App\Filament\Resources\InvoiceResource; // Keep if used elsewhere, or remove if not
+use App\Filament\Resources\InvoiceResource;
 use App\Models\Lead;
 use Filament\Forms;
 use Filament\Forms\Components\Actions;
 use Filament\Forms\Components\Actions\Action;
-use Filament\Forms\Form; // Keep if used elsewhere, or remove if not
+use Filament\Forms\Form;
 use Filament\Facades\Filament;
 use Icetalker\FilamentTableRepeater\Forms\Components\TableRepeater;
+use Filament\Forms\Components\Repeater; // Add this for the invoices repeater
+use Filament\Forms\Components\Grid; // To control layout within repeater
+use Filament\Support\Enums\Alignment; // For aligning action button
 
 class LeadForm
 {
@@ -125,21 +128,30 @@ class LeadForm
                                         ->numeric()
                                         ->prefix('$')
                                         ->visible($isAdmin),
-                                    Forms\Components\Placeholder::make('total_cleared')
+                                    Forms\Components\TextInput::make('total_cleared')
                                         ->label('Amount Cleared')
-                                        ->content(function ($record) {
-                                            if (!$record)
-                                                return '$0.00';
-                                            return '$' . number_format($record->leadAmounts()->sum('amount_cleared'), 2);
+                                        ->prefix('$')
+                                        ->numeric() // Ensures numeric styling/formatting if applicable
+                                        ->disabled()
+                                        ->formatStateUsing(function ($record): string {
+                                            if (!$record) {
+                                                return '0.00'; // Value for prefixing, number_format handles formatting
+                                            }
+                                            // Calculate the sum, similar to the original Placeholder
+                                            $sum = $record->leadAmounts()->sum('amount_cleared');
+                                            return number_format($sum, 2);
                                         })
                                         ->visible($isAdmin),
-                                    Forms\Components\Placeholder::make('total_remaining')
+                                    Forms\Components\TextInput::make('total_remaining')
                                         ->label('Amount Remaining')
-                                        ->content(function ($record) {
-                                            if (!$record)
-                                                return '$0.00';
+                                        ->prefix('$')
+                                        ->disabled()
+                                        ->formatStateUsing(function ($record): string {
+                                            if (!$record) {
+                                                return '0.00';
+                                            }
                                             $remaining = $record->amount_owed - $record->leadAmounts()->sum('amount_cleared');
-                                            return '$' . number_format($remaining, 2);
+                                            return number_format($remaining, 2);
                                         })
                                         ->visible($isAdmin),
                                     Forms\Components\Select::make('writ_id')
@@ -157,20 +169,68 @@ class LeadForm
                                     Forms\Components\TextInput::make('lbx')
                                         ->maxLength(255),
                                 ]),
-                            Forms\Components\Section::make('Create Invoice Actions')
+                            Forms\Components\Section::make('Invoices')
+                                ->description('Manage invoices related to this lead. You can create new invoices or view existing ones.')
+                                ->headerActions([
+                                    Action::make('createInvoiceFromLead')
+                                        ->label('Create New Invoice')
+                                        ->icon('heroicon-o-document-plus')
+                                        ->url(fn(?Lead $record): string => $record ? route('invoices.createFromLead', ['lead' => $record->id]) : '#')
+                                        ->openUrlInNewTab()
+                                        ->disabled(fn(?Lead $record) => !$record)
+                                        ->color('primary'),
+                                ])
                                 ->schema([
-                                    Actions::make([
-                                        Action::make('createInvoiceFromLead')
-                                            ->label('Create Invoice & Edit')
-                                            ->icon('heroicon-o-document-plus')
-                                            ->url(fn (Lead $record): string => route('invoices.createFromLead', ['lead' => $record->id])) // Pass lead ID
-                                            ->openUrlInNewTab()
-                                            ->requiresConfirmation(false)
-                                            ->color('primary'),
-                                    ])->fullWidth(),
-                                ])->collapsible()->collapsed(false),
+                                    Repeater::make('invoices')
+                                        ->relationship('invoices') // Assumes 'invoices' relationship exists on Lead model
+                                        ->schema([
+                                            Forms\Components\TextInput::make('invoice_number')
+                                                ->label('Invoice #')
+                                                ->disabled()
+                                                ->columnSpan(1),
+                                            Forms\Components\DatePicker::make('invoice_date')
+                                                ->label('Date')
+                                                ->disabled()
+                                                ->columnSpan(1),
+                                            Forms\Components\TextInput::make('status')
+                                                ->label('Status')
+                                                ->disabled()
+                                                ->columnSpan(1),
+                                            Forms\Components\TextInput::make('total_amount')
+                                                ->label('Total')
+                                                ->numeric()
+                                                ->prefix('$')
+                                                ->disabled()
+                                                ->columnSpan(1),
+                                            Actions::make([
+                                                Action::make('editInvoice')
+                                                    ->label('Edit')
+                                                    ->icon('heroicon-o-pencil-square')
+                                                    ->url(fn(Forms\Get $get): string => InvoiceResource::getUrl('edit', ['record' => $get('id')]))
+                                                    ->openUrlInNewTab(),
+                                                Action::make('downloadInvoice')
+                                                    ->label('Download PDF')
+                                                    ->icon('heroicon-o-arrow-down-tray')
+                                                    ->url(fn(Forms\Get $get): string => route('invoices.download', ['invoice' => $get('id')]))
+                                                    ->openUrlInNewTab(),
+                                            ])->columnSpan(2)->alignment(Alignment::End),
+                                        ])
+                                        ->columns(6) // Adjust total columns for the repeater items
+                                        ->addable(false)
+                                        ->deletable(false)
+                                        ->reorderable(false)
+                                        ->collapsible(false)
+                                        ->collapsed(false)
+                                        ->label('Existing Invoices')
+                                        ->columnSpanFull()
+                                        ->visible(fn(?Lead $record) => $record && $record->invoices()->exists()),
+
+                                ])
+                                ->collapsible()
+                                ->collapsed(true),
 
                             Forms\Components\Section::make('Payment History')
+                                ->description('Record payments made towards the lead. Payments can be added, edited, or deleted.')
                                 ->schema([
                                     TableRepeater::make('leadAmounts')
                                         ->relationship()
@@ -178,23 +238,28 @@ class LeadForm
                                             Forms\Components\TextInput::make('amount_cleared')
                                                 ->numeric()
                                                 ->prefix('$')
-                                                ->required(),
+                                                ->required()
+                                                ->columnSpan(1), // Small width
                                             Forms\Components\DatePicker::make('payment_date')
                                                 ->label('Payment Date')
                                                 ->required()
-                                                ->default(now()),
+                                                ->default(now())
+                                                ->columnSpan(1), // Small width
                                             Forms\Components\TextInput::make('description')
                                                 ->label('Description')
-                                                ->columnSpanFull(),
+                                                ->columnSpan(2), // Widest possible for a 2+2 grid, or use columnSpanFull() if it's the only item in its row
                                         ])
                                         ->defaultItems(0)
                                         ->reorderable(false)
                                         ->columnSpanFull()
                                         ->addActionLabel('Add Payment')
                                         ->label('Payment Details')
-                                        ->grid(2),
+                                        ->grid(['default' => 1, 'md' => 2, 'lg' => 4]) // Adjust grid for responsiveness
+                                        ->columns(4), // Set total columns for items inside
                                 ])
                                 ->visible($isAdmin)
+                                ->collapsible()
+                                ->collapsed(true),
                         ]),
 
                     Forms\Components\Tabs\Tab::make('Additional Info')
@@ -209,8 +274,9 @@ class LeadForm
                                 ]),
                         ]),
                 ])
-                ->contained()
+                ->contained(true)
                 ->columnSpanFull()
+                ->persistTabInQueryString()
         ];
     }
 
