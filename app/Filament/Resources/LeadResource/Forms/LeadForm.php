@@ -3,7 +3,7 @@
 namespace App\Filament\Resources\LeadResource\Forms;
 
 use App\Filament\Resources\InvoiceResource;
-use App\Models\Lead;
+use App\Models\Lead; // Ensure Lead model is imported
 use Filament\Forms;
 use Filament\Forms\Components\Actions;
 use Filament\Forms\Components\Actions\Action;
@@ -13,6 +13,8 @@ use Icetalker\FilamentTableRepeater\Forms\Components\TableRepeater;
 use Filament\Forms\Components\Repeater; // Add this for the invoices repeater
 use Filament\Forms\Components\Grid; // To control layout within repeater
 use Filament\Support\Enums\Alignment; // For aligning action button
+use Filament\Forms\Get;
+use Filament\Forms\Set;
 
 class LeadForm
 {
@@ -127,30 +129,63 @@ class LeadForm
                                     Forms\Components\TextInput::make('amount_owed')
                                         ->numeric()
                                         ->prefix('$')
-                                        ->visible($isAdmin),
+                                        ->visible($isAdmin)
+                                        ->live(onBlur: true) // Update on blur to avoid too many updates while typing
+                                        ->afterStateUpdated(function (Get $get, Set $set, $state, ?Lead $record) {
+                                            $amountOwedNumeric = (float) $state;
+                                            $totalClearedNumeric = 0;
+
+                                            if ($record) {
+                                                // Fallback to record if not in form state (e.g., initial load before repeater interaction)
+                                                $totalClearedNumeric = $record->leadAmounts()->sum('amount_cleared');
+                                            }
+
+                                            $newRemainingAmount = $amountOwedNumeric - $totalClearedNumeric;
+                                            $set('total_remaining', number_format($newRemainingAmount, 2));
+                                            // Optionally, update total_cleared if it needs to reflect repeater changes
+                                            // when amount_owed is the trigger for an update cycle.
+                                            // $set('total_cleared', number_format($totalClearedNumeric, 2));
+                                        }),
                                     Forms\Components\TextInput::make('total_cleared')
                                         ->label('Amount Cleared')
                                         ->prefix('$')
-                                        ->numeric() // Ensures numeric styling/formatting if applicable
+                                        ->numeric()
                                         ->disabled()
-                                        ->formatStateUsing(function ($record): string {
-                                            if (!$record) {
-                                                return '0.00'; // Value for prefixing, number_format handles formatting
+                                        ->formatStateUsing(function (?Lead $record, Get $get): string {
+                                            if (!$record && !$get('leadAmounts')) return '0.00';
+
+                                            $totalClearedNumeric = 0;
+                                            $leadAmountsItems = $get('leadAmounts');
+
+                                            if (is_array($leadAmountsItems)) {
+                                                foreach ($leadAmountsItems as $item) {
+                                                    $totalClearedNumeric += (float)($item['amount_cleared'] ?? 0);
+                                                }
+                                            } elseif($record) {
+                                                 $totalClearedNumeric = $record->leadAmounts()->sum('amount_cleared');
                                             }
-                                            // Calculate the sum, similar to the original Placeholder
-                                            $sum = $record->leadAmounts()->sum('amount_cleared');
-                                            return number_format($sum, 2);
+                                            return number_format($totalClearedNumeric, 2);
                                         })
                                         ->visible($isAdmin),
                                     Forms\Components\TextInput::make('total_remaining')
                                         ->label('Amount Remaining')
                                         ->prefix('$')
+                                        ->numeric() // Keep numeric for consistency, though disabled
                                         ->disabled()
-                                        ->formatStateUsing(function ($record): string {
-                                            if (!$record) {
-                                                return '0.00';
+                                        ->formatStateUsing(function (?Lead $record, Get $get): string {
+                                            if (!$record && !$get('amount_owed')) return '0.00';
+
+                                            $amountOwedNumeric = (float) $get('amount_owed');
+                                            if (!$amountOwedNumeric && $record) {
+                                                $amountOwedNumeric = (float) $record->amount_owed;
                                             }
-                                            $remaining = $record->amount_owed - $record->leadAmounts()->sum('amount_cleared');
+
+                                            $totalClearedNumeric = 0;
+                                            if($record) {
+                                                 $totalClearedNumeric = $record->leadAmounts()->sum('amount_cleared');
+                                            }
+
+                                            $remaining = $amountOwedNumeric - $totalClearedNumeric;
                                             return number_format($remaining, 2);
                                         })
                                         ->visible($isAdmin),
