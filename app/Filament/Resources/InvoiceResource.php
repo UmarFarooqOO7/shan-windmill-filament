@@ -23,6 +23,7 @@ use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Section;
 use Filament\Tables\Columns\TextColumn;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
 
 class InvoiceResource extends Resource
 {
@@ -43,7 +44,7 @@ class InvoiceResource extends Resource
                     ->required()
                     ->maxLength(255)
                     ->unique(Invoice::class, 'invoice_number', ignoreRecord: true)
-                    ->default(fn() => 'INV-' . date('Ymd') . '-' . strtoupper(uniqid())),
+                    ->default(fn() => 'INV-' . date('Ymd') . '-' . strtoupper(Str::random(5))),
                 DatePicker::make('invoice_date')
                     ->required()
                     ->default(now()),

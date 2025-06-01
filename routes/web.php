@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Auth;
 use App\Services\GoogleCalendarService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log; // Keep for logging potential errors
+use App\Http\Controllers\InvoiceController;
 
 Route::get('/', function () {
     return redirect()->to('/admin/calendar');
@@ -54,4 +55,12 @@ Route::get('/google-disconnect', function (Request $request, GoogleCalendarServi
     }
     return redirect()->to('/admin/calendar')->with('error', 'Failed to disconnect from Google Calendar.');
 })->name('google-disconnect')->middleware('auth'); // Ensure only authenticated users can access
+
+Route::get('invoices/{invoice}/download', [InvoiceController::class, 'download'])
+    ->name('invoices.download')
+    ->middleware('auth'); // Ensure only authenticated users can download
+
+Route::get('leads/{lead}/create-invoice', [InvoiceController::class, 'createFromLeadAndEdit'])
+    ->name('invoices.createFromLead')
+    ->middleware('auth'); // Ensure only authenticated users can create invoices
 

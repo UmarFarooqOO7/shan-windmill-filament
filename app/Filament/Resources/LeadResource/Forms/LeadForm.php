@@ -2,8 +2,12 @@
 
 namespace App\Filament\Resources\LeadResource\Forms;
 
+use App\Filament\Resources\InvoiceResource; // Keep if used elsewhere, or remove if not
+use App\Models\Lead;
 use Filament\Forms;
-use Filament\Forms\Form;
+use Filament\Forms\Components\Actions;
+use Filament\Forms\Components\Actions\Action;
+use Filament\Forms\Form; // Keep if used elsewhere, or remove if not
 use Filament\Facades\Filament;
 use Icetalker\FilamentTableRepeater\Forms\Components\TableRepeater;
 
@@ -124,14 +128,16 @@ class LeadForm
                                     Forms\Components\Placeholder::make('total_cleared')
                                         ->label('Amount Cleared')
                                         ->content(function ($record) {
-                                            if (!$record) return '$0.00';
+                                            if (!$record)
+                                                return '$0.00';
                                             return '$' . number_format($record->leadAmounts()->sum('amount_cleared'), 2);
                                         })
                                         ->visible($isAdmin),
                                     Forms\Components\Placeholder::make('total_remaining')
                                         ->label('Amount Remaining')
                                         ->content(function ($record) {
-                                            if (!$record) return '$0.00';
+                                            if (!$record)
+                                                return '$0.00';
                                             $remaining = $record->amount_owed - $record->leadAmounts()->sum('amount_cleared');
                                             return '$' . number_format($remaining, 2);
                                         })
@@ -151,6 +157,18 @@ class LeadForm
                                     Forms\Components\TextInput::make('lbx')
                                         ->maxLength(255),
                                 ]),
+                            Forms\Components\Section::make('Create Invoice Actions')
+                                ->schema([
+                                    Actions::make([
+                                        Action::make('createInvoiceFromLead')
+                                            ->label('Create Invoice & Edit')
+                                            ->icon('heroicon-o-document-plus')
+                                            ->url(fn (Lead $record): string => route('invoices.createFromLead', ['lead' => $record->id])) // Pass lead ID
+                                            ->openUrlInNewTab()
+                                            ->requiresConfirmation(false)
+                                            ->color('primary'),
+                                    ])->fullWidth(),
+                                ])->collapsible()->collapsed(false),
 
                             Forms\Components\Section::make('Payment History')
                                 ->schema([
@@ -165,6 +183,9 @@ class LeadForm
                                                 ->label('Payment Date')
                                                 ->required()
                                                 ->default(now()),
+                                            Forms\Components\TextInput::make('description')
+                                                ->label('Description')
+                                                ->columnSpanFull(),
                                         ])
                                         ->defaultItems(0)
                                         ->reorderable(false)
@@ -174,28 +195,24 @@ class LeadForm
                                         ->grid(2),
                                 ])
                                 ->visible($isAdmin)
-
                         ]),
 
                     Forms\Components\Tabs\Tab::make('Additional Info')
                         ->schema([
                             Forms\Components\Grid::make()
                                 ->schema([
-                                Forms\Components\TextInput::make('locs')
-                                    ->maxLength(255)
-                                    ->visible($isAdmin),
-                                Forms\Components\Textarea::make('notes')
-                                    ->columnSpanFull(),
+                                    Forms\Components\TextInput::make('locs')
+                                        ->maxLength(255)
+                                        ->visible($isAdmin),
+                                    Forms\Components\Textarea::make('notes')
+                                        ->columnSpanFull(),
                                 ]),
                         ]),
                 ])
-                ->contained() // This removes the scrollbar
+                ->contained()
                 ->columnSpanFull()
         ];
     }
 
-    public static function form(Form $form): Form
-    {
-        return $form->schema(self::make());
-    }
+    // Removed duplicate form method
 }
