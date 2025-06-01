@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use App\Models\Event;
+use App\Models\Invoice; // Add this line
 
 class Lead extends Model
 {
@@ -61,6 +62,11 @@ class Lead extends Model
     public function leadAmounts()
     {
         return $this->hasMany(LeadAmount::class);
+    }
+
+    public function invoices(): HasMany // Add this relationship
+    {
+        return $this->hasMany(Invoice::class);
     }
 
     public function teams()

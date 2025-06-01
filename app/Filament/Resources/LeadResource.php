@@ -39,7 +39,7 @@ class LeadResource extends Resource
 
     public static function form(Form $form): Form
     {
-        return LeadForm::form($form);
+        return $form->schema(LeadForm::make());
     }
 
     public static function table(Table $table): Table

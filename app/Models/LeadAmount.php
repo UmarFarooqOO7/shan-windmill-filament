@@ -15,7 +15,8 @@ class LeadAmount extends Model
         'lead_id',
         'amount_cleared',
         'amount_owed',
-        'payment_date'
+        'payment_date',
+        'description'
     ];
 
     // Define the casts for the properties
