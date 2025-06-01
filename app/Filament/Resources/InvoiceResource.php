@@ -62,11 +62,13 @@ class InvoiceResource extends Resource
                     ->default('draft'),
                 Select::make('template_id')
                     ->options([
-                        1 => 'Template 1',
-                        2 => 'Template 2',
-                        3 => 'Template 3',
+                        'modern' => 'Modern',
+                        'classic' => 'Classic',
+                        'compact' => 'Compact',
+                        'default' => 'Default',
                     ])
                     ->required()
+                    ->default('default')
                     ->label('Invoice Template'),
                 Textarea::make('notes')
                     ->columnSpanFull(),

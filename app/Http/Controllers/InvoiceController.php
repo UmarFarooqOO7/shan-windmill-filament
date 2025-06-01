@@ -17,13 +17,40 @@ class InvoiceController extends Controller // Renamed from InvoicePdfController
         // Ensure items are loaded
         $invoice->load('items', 'lead');
 
-        // Determine which template to use
-        // For now, we'll use a default. Later we can use $invoice->template_id
-        $template = 'invoices.pdf.default'; // or e.g., 'invoices.pdf.' . $invoice->template_id
+        // Determine which template to use based on $invoice->template_id
+        $templateName = $invoice->template_id ?? 'default'; // Default to 'default' if not set
+        $templateView = 'invoices.pdf.' . $templateName;
 
-        $pdf = Pdf::loadView($template, compact('invoice'));
+        // Fallback to default if the specific template view doesn't exist
+        if (!view()->exists($templateView)) {
+            $templateView = 'invoices.pdf.default';
+        }
 
-        return $pdf->download('invoice-' . $invoice->invoice_number . '.pdf');
+        $pdf = Pdf::loadView($templateView, compact('invoice'));
+
+        // Stream the PDF to the browser for preview instead of direct download
+        return $pdf->stream('invoice-' . $invoice->invoice_number . '.pdf');
+    }
+
+    public function preview(Invoice $invoice)
+    {
+        // Ensure items are loaded
+        $invoice->load('items', 'lead');
+
+        // Determine which template to use based on $invoice->template_id
+        $templateName = $invoice->template_id ?? 'default'; // Default to 'default' if not set
+        // Ensure templateName is a string and corresponds to a file, e.g., 'modern', 'classic', 'compact'
+        // If template_id could be numeric or other, map it to a valid string name here.
+        $templateView = 'invoices.pdf.' . $templateName;
+
+        // Fallback to default if the specific template view doesn't exist
+        if (!view()->exists($templateView)) {
+            // Log this occurrence or handle as an error if specific templates are mandatory
+            $templateView = 'invoices.pdf.default'; // Assuming you have a default.blade.php
+        }
+
+        // Return the HTML view directly
+        return view($templateView, compact('invoice'));
     }
 
     public function createFromLeadAndEdit(Request $request, Lead $lead)
@@ -42,7 +69,7 @@ class InvoiceController extends Controller // Renamed from InvoicePdfController
         $invoice->invoice_date = now();
         $invoice->due_date = now()->addDays(30); // Default due date, e.g., 30 days from now
         $invoice->status = 'draft'; // Default status
-        $invoice->template_id = 1; // Default template ID
+        $invoice->template_id = 'default'; // Default template ID to string 'default'
         // Initialize totals - these will be recalculated based on items
         $invoice->subtotal = 0;
         $invoice->tax_rate = 0; // Default tax rate

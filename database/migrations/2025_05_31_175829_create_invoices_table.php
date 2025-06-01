@@ -24,7 +24,7 @@ return new class extends Migration
             $table->decimal('tax_amount', 10, 2)->nullable();
             $table->decimal('total_amount', 10, 2);
             $table->text('notes')->nullable();
-            $table->unsignedBigInteger('template_id')->nullable(); // To identify PDF template
+            $table->string('template_id')->default('default')->nullable(); // Changed from unsignedBigInteger to string, added default
             $table->timestamps();
         });
     }

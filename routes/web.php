@@ -7,6 +7,14 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log; // Keep for logging potential errors
 use App\Http\Controllers\InvoiceController;
 
+/*
+|--------------------------------------------------------------------------|
+| This file is part of the "web" middleware group. Make something great!   |
+|--------------------------------------------------------------------------|
+*/
+
+Route::get('/invoices/{invoice}/preview', [InvoiceController::class, 'preview'])->name('invoices.preview');
+
 Route::get('/', function () {
     return redirect()->to('/admin/calendar');
 });
