@@ -19,6 +19,7 @@ use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 use Saade\FilamentFullCalendar\FilamentFullCalendarPlugin;
+use Filament\Navigation\NavigationItem;
 
 class AdminPanelProvider extends PanelProvider
 {
@@ -64,6 +65,13 @@ class AdminPanelProvider extends PanelProvider
                 FilamentFullCalendarPlugin::make()
                     ->selectable(true)
                     ->editable(true)
-            );
+            )
+            ->navigationItems([
+                NavigationItem::make()
+                    ->label('Chat')
+                    ->icon('heroicon-o-chat-bubble-left-right')
+                    ->url('/admin/chat') // ✅ Use direct URL string instead of route() helper
+                    ->sort(90),
+            ]);
     }
 }

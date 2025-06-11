@@ -70,4 +70,9 @@ class User extends Authenticatable implements FilamentUser
         // return str_ends_with($this->email, '@yourdomain.com') && $this->hasVerifiedEmail();
         return true; // Or simply return true if all users can access
     }
+
+    public function chats()
+    {
+        return $this->belongsToMany(Chat::class);
+    }
 }

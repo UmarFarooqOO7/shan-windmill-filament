@@ -6,6 +6,7 @@ use App\Services\GoogleCalendarService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log; // Keep for logging potential errors
 use App\Http\Controllers\InvoiceController;
+use App\Livewire\ChatPanel;
 
 /*
 |--------------------------------------------------------------------------|
@@ -72,3 +73,6 @@ Route::get('leads/{lead}/create-invoice', [InvoiceController::class, 'createFrom
     ->name('invoices.createFromLead')
     ->middleware('auth'); // Ensure only authenticated users can create invoices
 
+Route::get('/admin/chat', function () {
+    return view('admin.chat');
+})->name('filament.chat');

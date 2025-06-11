@@ -23,7 +23,7 @@ class DatabaseSeeder extends Seeder
 
         $this->call([
             StatusSeeder::class,
-            EventSeeder::class, // Add EventSeeder to the list
+            // EventSeeder::class, // Add EventSeeder to the list
         ]);
     }
 }
