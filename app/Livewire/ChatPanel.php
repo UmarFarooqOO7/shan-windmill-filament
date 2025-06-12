@@ -7,19 +7,17 @@ use Illuminate\Support\Facades\Auth;
 use App\Models\User;
 use App\Models\Chat;
 use App\Models\Message;
+use Livewire\Attributes\Computed;
 
 class ChatPanel extends Component
 {
-    public $users;
     public $selectedUser = null;
     public $selectedChat = null;
     public $messages = [];
     public $newMessage = '';
+    public $search = '';
 
-    public function mount()
-    {
-        $this->users = User::where('id', '!=', Auth::id())->get();
-    }
+
 
     public function selectUser($userId)
     {
@@ -41,6 +39,19 @@ class ChatPanel extends Component
 
         $this->selectedChat = $chat;
         $this->loadMessages();
+        // Dispatch scroll event
+        $this->dispatch('scrollToBottom');
+    }
+
+    #[Computed]
+    public function users()
+    {
+        return User::query()
+            ->where('id', '!=', Auth::id())
+            ->when($this->search, fn($q) =>
+                $q->where('name', 'like', '%' . $this->search . '%'))
+            ->orderBy('name')
+            ->get();
     }
 
     public function loadMessages()
@@ -65,7 +76,20 @@ class ChatPanel extends Component
 
         $this->newMessage = '';
         $this->loadMessages(); // refresh
+        // Dispatch scroll event
+        $this->dispatch('scrollToBottom');
     }
+
+    public function deleteMessage($id)
+    {
+        $message = Message::find($id);
+
+        if ($message && $message->user_id === auth()->id()) {
+            $message->delete();
+            $this->loadMessages(); // Refresh messages after deletion
+        }
+    }
+
 
     public function render()
     {
