@@ -15,7 +15,9 @@ return new class extends Migration
             $table->id();
             $table->foreignId('chat_id')->constrained()->onDelete('cascade');
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
-            $table->text('message');
+            $table->text('message')->nullable();
+            $table->json('deleted_by')->nullable();
+            $table->json('attachments')->nullable(); 
             $table->boolean('is_read')->default(false);
             $table->timestamps();
         });

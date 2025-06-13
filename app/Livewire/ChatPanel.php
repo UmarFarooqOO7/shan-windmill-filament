@@ -7,16 +7,22 @@ use Illuminate\Support\Facades\Auth;
 use App\Models\User;
 use App\Models\Chat;
 use App\Models\Message;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Livewire\Attributes\Computed;
+use Livewire\WithFileUploads;
 
 class ChatPanel extends Component
 {
+    use WithFileUploads;
+
+
     public $selectedUser = null;
     public $selectedChat = null;
     public $messages = [];
     public $newMessage = '';
     public $search = '';
-
+    public $mediaFiles = [];
 
 
     public function selectUser($userId)
@@ -49,7 +55,7 @@ class ChatPanel extends Component
         return User::query()
             ->where('id', '!=', Auth::id())
             ->when($this->search, fn($q) =>
-                $q->where('name', 'like', '%' . $this->search . '%'))
+            $q->where('name', 'like', '%' . $this->search . '%'))
             ->orderBy('name')
             ->get();
     }
@@ -61,20 +67,45 @@ class ChatPanel extends Component
                 ->messages()
                 ->with('user')
                 ->orderBy('created_at')
+                // not get deleted messages
+                ->where(function ($query) {
+                    $query->whereNull('deleted_by')
+                        ->orWhereJsonDoesntContain('deleted_by', Auth::id());
+                })
                 ->get();
         }
     }
 
+    public function removeMedia($index)
+    {
+        unset($this->mediaFiles[$index]);
+        $this->mediaFiles = array_values($this->mediaFiles); // reindex
+    }
+
     public function sendMessage()
     {
-        if (!$this->newMessage || !$this->selectedChat) return;
+        if (empty($this->newMessage) && count($this->mediaFiles) === 0) {
+            return;
+        }
+
+        $filePaths = [];
+
+        foreach ($this->mediaFiles as $file) {
+            $originalName = $file->getClientOriginalName(); // e.g. invoice_march.pdf
+            $path = $file->storeAs('chat_attachments', $originalName, 'public');
+            $filePaths[] = $path; // store only relative path, not full URL
+        }
+
 
         $this->selectedChat->messages()->create([
             'user_id' => Auth::id(),
-            'message' => $this->newMessage,
+            'message' => $this->newMessage ?? '',
+            'attachment' => count($filePaths) ? json_encode($filePaths) : null,
         ]);
 
+
         $this->newMessage = '';
+        $this->mediaFiles = [];
         $this->loadMessages(); // refresh
         // Dispatch scroll event
         $this->dispatch('scrollToBottom');
@@ -85,10 +116,38 @@ class ChatPanel extends Component
         $message = Message::find($id);
 
         if ($message && $message->user_id === auth()->id()) {
+
+            // Delete attached files from storage
+            if ($message->attachment) {
+                $attachments = json_decode($message->attachment, true);
+
+                foreach ($attachments as $filePath) {
+                    if ($filePath && Storage::disk('public')->exists($filePath)) {
+                        Storage::disk('public')->delete($filePath);
+                    }
+                }
+            }
+
             $message->delete();
             $this->loadMessages(); // Refresh messages after deletion
         }
     }
+
+    public function deleteChat()
+    {
+        Message::where('chat_id', $this->selectedChat->id)
+            ->where(function ($query) {
+                $query->whereNull('deleted_by')
+                    ->orWhereJsonDoesntContain('deleted_by', auth()->id());
+            })
+            ->update([
+                'deleted_by' => DB::raw("JSON_ARRAY_APPEND(IFNULL(deleted_by, JSON_ARRAY()), '$', " . auth()->id() . ")")
+            ]);
+
+        $this->selectedChat = null;
+        $this->selectedUser = null;
+    }
+
 
 
     public function render()
