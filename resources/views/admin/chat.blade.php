@@ -16,7 +16,5 @@
 @endpush
 
 @section('content')
-    <h2 class="mb-4">Chat Panel</h2>
-
     @livewire('chat-panel')
 @endsection

@@ -1,26 +1,70 @@
 <div class="row">
-    <div class="col-md-3 border-end p-0" style="height: 80vh;">
+    <div class="col-md-3 border-end px-0" style="height: 90vh;">
         <div class="d-flex flex-column h-100">
 
             {{-- Search Bar --}}
-            <div class="p-3 border-bottom sticky-top bg-white" style="z-index: 1;">
+            <div class="p-3 border-bottom sticky-top bg-white d-flex gap-2 align-items-center justify-content-between"
+                style="z-index: 1;">
                 <input type="text" wire:model.live.debounce.250ms="search" class="form-control"
                     placeholder="Search users..." />
+
+                <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#newChatModal">
+                    <i class="fa fa-plus"></i>
+                </button>
             </div>
+
+            <!-- Modal -->
+            <div class="modal fade" id="newChatModal" tabindex="-1" aria-labelledby="newChatModalLabel"
+                aria-hidden="true" wire:ignore.self>
+                <div class="modal-dialog modal-dialog-scrollable">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Start New Chat</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"
+                                wire:click="$set('showingModal', false)"></button>
+                        </div>
+                        <div class="modal-body">
+                            <input type="text" class="form-control mb-3" wire:model.live.debounce.300ms="modalSearch"
+                                placeholder="Search users..." />
+
+                            @foreach ($this->allUsers as $user)
+                                <div class="d-flex align-items-center justify-content-between border-bottom py-2">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <img src="{{ 'https://ui-avatars.com/api/?name=' . urlencode($user->name) }}"
+                                            class="rounded-circle" width="40" height="40">
+                                        <div>{{ $user->name }}</div>
+                                    </div>
+                                    <button wire:click="selectUser({{ $user->id }})" class="btn btn-sm btn-primary"
+                                        data-bs-dismiss="modal" wire:click="$set('showingModal', false)">Chat</button>
+                                </div>
+                            @endforeach
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+
 
             {{-- Scrollable User List --}}
             <div class="flex-grow-1 overflow-y-auto">
                 @forelse($this->users as $user)
                     <div wire:click="selectUser({{ $user->id }})"
-                        class="d-flex align-items-center gap-2 px-3 py-2 border-bottom {{ $selectedUser && $selectedUser->id === $user->id ? 'bg-primary text-white' : 'bg-light' }}"
+                        class="d-flex align-items-center justify-content-between px-3 py-2 border-bottom {{ $selectedUser && $selectedUser->id === $user->id ? 'bg-primary text-white' : 'bg-light' }}"
                         style="cursor: pointer;">
 
-                        {{-- User Image --}}
-                        <img src="{{ 'https://ui-avatars.com/api/?name=' . urlencode($user->name) }}" alt="avatar"
-                            class="rounded-circle" width="40" height="40">
+                        <div class="d-flex align-items-center gap-2">
+                            {{-- User Avatar --}}
+                            <img src="{{ 'https://ui-avatars.com/api/?name=' . urlencode($user->name) }}" alt="avatar"
+                                class="rounded-circle" width="40" height="40">
 
-                        {{-- User Name --}}
-                        <div class="fw-semibold">{{ $user->name }}</div>
+                            {{-- User Name --}}
+                            <div class="fw-semibold">{{ $user->name }}</div>
+                        </div>
+
+                        {{-- Unread Badge --}}
+                        @if ($user->unread_count > 0)
+                            <span class="badge bg-danger rounded-pill">{{ $user->unread_count }}</span>
+                        @endif
                     </div>
                 @empty
                     <div class="text-muted text-center p-3">No users found.</div>
@@ -29,9 +73,7 @@
         </div>
     </div>
 
-    <div class="col-md-9 d-flex flex-column" style="height: 80vh;">
-
-
+    <div class="col-md-9 d-flex flex-column px-0" style="height: 90vh;">
         @if ($selectedChat)
             <div class="d-flex justify-content-between align-items-center border-bottom px-3 py-2 bg-white shadow-sm">
                 <!-- Left: User Avatar + Name -->
@@ -42,7 +84,7 @@
                 </div>
 
                 <!-- Right: Dropdown -->
-                <div class="dropdown">
+                <div class="dropdown" wire:ignore>
                     <a class="btn btn-light btn-sm dropdown-toggle" href="#" role="button" id="dropdownMenuLink"
                         data-bs-toggle="dropdown" aria-expanded="false">
                         Options
@@ -63,9 +105,10 @@
             </div>
         @endif
 
-        <div class="flex-grow-1 overflow-auto border-bottom p-3" id="chat-box">
+        <div class="flex-grow-1 overflow-auto border-bottom p-3" id="chat-box"
+            wire:poll.keep-alive.5000ms="loadMessages">
             @if ($selectedChat)
-                <div wire:poll.keep-alive.5000ms="loadMessages">
+                <div>
                     @forelse($messages as $msg)
                         @php
                             $attachments = $msg->attachment ? json_decode($msg->attachment, true) : [];
@@ -97,8 +140,10 @@
                                     <div class="p-2 mb-2 rounded shadow-sm bg-white"
                                         style="background-color: #f8f9fa; max-width: 300px;">
                                         @if (in_array($extension, ['jpg', 'jpeg', 'png', 'gif', 'webp']))
-                                            <img src="{{ $fileUrl }}" class="img-fluid rounded"
-                                                style="max-height: 200px;" />
+                                            <a href="{{ $fileUrl }}" target="_blank">
+                                                <img src="{{ $fileUrl }}" class="img-fluid rounded"
+                                                    style="max-height: 200px;" />
+                                            </a>
                                         @elseif($extension === 'pdf')
                                             <div class="d-flex align-items-center gap-2">
                                                 <i class="fa-solid fa-file-pdf text-danger fs-3"></i>
@@ -160,13 +205,14 @@
                     @endforelse
                 </div>
             @else
-                <div class="text-muted">Select a user to chat with.</div>
+                <div class="text-muted text-center">Select a user to chat with.</div>
             @endif
         </div>
 
 
         @if ($selectedChat)
-            <form wire:submit.prevent="sendMessage" class="d-flex flex-column gap-2 p-3" enctype="multipart/form-data">
+            <form wire:submit.prevent="sendMessage" class="d-flex flex-column gap-2 p-3"
+                enctype="multipart/form-data">
 
                 {{-- PREVIEW MULTIPLE FILES --}}
                 @if ($mediaFiles && count($mediaFiles))

@@ -23,7 +23,31 @@ class ChatPanel extends Component
     public $newMessage = '';
     public $search = '';
     public $mediaFiles = [];
+    public bool $showingModal = false;
+    public string $modalSearch = '';
 
+
+
+    // modal open and users show with search
+
+    #[Computed]
+    public function allUsers()
+    {
+        return User::query()
+            ->where('id', '!=', Auth::id())
+            ->when($this->modalSearch, function ($query) {
+                $query->where('name', 'like', '%' . $this->modalSearch . '%');
+            })
+            ->orderBy('name')
+            ->get();
+    }
+
+    public function updatedShowingModal($val)
+    {
+        if (!$val) {
+            $this->modalSearch = '';
+        }
+    }
 
     public function selectUser($userId)
     {
@@ -52,13 +76,29 @@ class ChatPanel extends Component
     #[Computed]
     public function users()
     {
+        $authId = auth()->id();
+
         return User::query()
-            ->where('id', '!=', Auth::id())
-            ->when($this->search, fn($q) =>
-            $q->where('name', 'like', '%' . $this->search . '%'))
+            ->where('id', '!=', $authId)
+            ->whereHas('chats', function ($q) use ($authId) {
+                $q->whereHas('users', fn($q) => $q->where('users.id', $authId));
+            })
+            ->when(
+                $this->search,
+                fn($q) =>
+                $q->where('name', 'like', '%' . $this->search . '%')
+            )
+            ->withCount([
+                'receivedMessages as unread_count' => function ($q) use ($authId) {
+                    $q->where('is_read', false)
+                        ->whereHas('chat.users', fn($q) => $q->where('users.id', $authId));
+                }
+            ])
+            ->orderByDesc('unread_count')
             ->orderBy('name')
             ->get();
     }
+
 
     public function loadMessages()
     {
@@ -73,6 +113,11 @@ class ChatPanel extends Component
                         ->orWhereJsonDoesntContain('deleted_by', Auth::id());
                 })
                 ->get();
+
+            $this->selectedChat->messages()
+                ->where('user_id', '!=', Auth::id())
+                ->where('is_read', false)
+                ->update(['is_read' => true]);
         }
     }
 
