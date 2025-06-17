@@ -19,7 +19,12 @@ class ChatPanel extends Component
 
     public $selectedUser = null;
     public $selectedChat = null;
+
     public $messages = [];
+    public $perPage = 10;
+    public $page = 1;
+    public $hasMoreMessages = true;
+
     public $newMessage = '';
     public $search = '';
     public $mediaFiles = [];
@@ -68,6 +73,9 @@ class ChatPanel extends Component
         }
 
         $this->selectedChat = $chat;
+
+        $this->page = 1;
+        $this->perPage = 10;
         $this->loadMessages();
         // Dispatch scroll event
         $this->dispatch('scrollToBottom');
@@ -99,26 +107,83 @@ class ChatPanel extends Component
             ->get();
     }
 
-
-    public function loadMessages()
+    public function loadMessages($mode = 'initial') // mode: 'initial', 'scroll', 'poll'
     {
-        if ($this->selectedChat) {
-            $this->messages = $this->selectedChat
-                ->messages()
-                ->with('user')
+        if (!$this->selectedChat) return;
+
+        $query = $this->selectedChat
+            ->messages()
+            ->with('user')
+            ->where(function ($q) {
+                $q->whereNull('deleted_by')
+                    ->orWhereJsonDoesntContain('deleted_by', Auth::id());
+            });
+
+        if ($mode === 'poll') {
+            // Load new messages after the last
+            $lastId = $this->messages->last()->id ?? 0;
+
+            $newMessages = $query
+                ->where('id', '>', $lastId)
                 ->orderBy('created_at')
-                // not get deleted messages
-                ->where(function ($query) {
-                    $query->whereNull('deleted_by')
-                        ->orWhereJsonDoesntContain('deleted_by', Auth::id());
-                })
                 ->get();
 
-            $this->selectedChat->messages()
-                ->where('user_id', '!=', Auth::id())
-                ->where('is_read', false)
-                ->update(['is_read' => true]);
+            $this->messages = $this->messages->merge($newMessages);
+
+            if ($newMessages->isNotEmpty()) {
+                $this->dispatch('scrollToBottom');
+            }
+        } else {
+            // Scroll or initial load
+            $messages = $query
+                ->orderByDesc('created_at')
+                ->skip(($this->page - 1) * $this->perPage)
+                ->take($this->perPage)
+                ->get()
+                ->reverse(); // Maintain old → new order
+
+            if ($mode === 'scroll') {
+                $this->messages = $messages->merge($this->messages); // Prepend
+            } else {
+                $this->messages = $messages; // Initial load
+            }
+
+            // Has more?
+            $total = $this->selectedChat->messages()->count();
+            $this->hasMoreMessages = $total > $this->page * $this->perPage;
         }
+
+        // Mark unread as read
+        $this->selectedChat->messages()
+            ->where('user_id', '!=', Auth::id())
+            ->where('is_read', false)
+            ->update(['is_read' => true]);
+    }
+
+    public function pollNewMessages()
+    {
+
+        if (!$this->selectedChat) return;
+
+        // $UnreadMsgs = $this->selectedChat->messages()
+        //     ->where('user_id', '!=', Auth::id())
+        //     ->where('is_read', false)
+        //     ->count();
+
+        // if ($UnreadMsgs > 0) {
+        //     $this->dispatch('playReceiveSound');
+        // }
+
+        $this->loadMessages('poll');
+    }
+
+
+    public function loadMoreMessages()
+    {
+        if (!$this->selectedChat || !$this->hasMoreMessages) return;
+
+        $this->page++;
+        $this->loadMessages('scroll');
     }
 
     public function removeMedia($index)
@@ -142,7 +207,7 @@ class ChatPanel extends Component
         }
 
 
-        $this->selectedChat->messages()->create([
+        $message =  $this->selectedChat->messages()->create([
             'user_id' => Auth::id(),
             'message' => $this->newMessage ?? '',
             'attachment' => count($filePaths) ? json_encode($filePaths) : null,
@@ -151,7 +216,9 @@ class ChatPanel extends Component
 
         $this->newMessage = '';
         $this->mediaFiles = [];
-        $this->loadMessages(); // refresh
+        // $this->loadMessages(); // refresh
+        // Append new message manually (no need to reload all)
+        $this->messages->push($message->load('user'));
         // Dispatch scroll event
         $this->dispatch('scrollToBottom');
     }

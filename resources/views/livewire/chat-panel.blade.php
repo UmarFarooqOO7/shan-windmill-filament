@@ -105,8 +105,23 @@
             </div>
         @endif
 
-        <div class="flex-grow-1 overflow-auto border-bottom p-3" id="chat-box"
-            wire:poll.keep-alive.5000ms="loadMessages">
+        <div id="chat-box" class="overflow-auto flex-grow-1 border-bottom p-3"
+            wire:poll.keep-alive.5000ms="pollNewMessages" x-data="{ previousScrollHeight: 0, loading: false }"
+            x-on:scroll.passive="
+        if ($el.scrollTop < 50 && @this.hasMoreMessages && !loading) {
+            loading = true;
+            previousScrollHeight = $el.scrollHeight;
+            @this.call('loadMoreMessages').then(() => {
+                // After Livewire updates DOM
+                $nextTick(() => {
+                    const newScrollHeight = $el.scrollHeight;
+                    $el.scrollTop = newScrollHeight - previousScrollHeight - 20;
+                    loading = false;
+                });
+            });
+        }
+    ">
+
             @if ($selectedChat)
                 <div>
                     @forelse($messages as $msg)
@@ -184,10 +199,25 @@
                                     </div>
                                 @endforeach
 
-                                {{-- Time --}}
-                                <small class="text-muted d-block mt-1" style="font-size: 10px;">
-                                    {{ $msg->created_at->format('h:i A') }}
-                                </small>
+                                <div class="d-flex align-items-center justify-content-between gap-3">
+                                    {{-- Time --}}
+                                    <small class="text-muted d-block mt-1" style="font-size: 10px;">
+                                        {{ $msg->created_at->format('h:i A') }}
+                                    </small>
+
+                                    {{-- double / single tick --}}
+                                    @if ($msg->user_id === auth()->id())
+                                        <div class="text-end text-muted small mt-1">
+                                            @if ($msg->is_read)
+                                                <i class="fa-solid fa-check-double text-primary"></i>
+                                                {{-- Read (✓✓ blue) --}}
+                                            @else
+                                                <i class="fa-solid fa-check"></i> {{-- Sent (✓) --}}
+                                            @endif
+                                        </div>
+                                    @endif
+                                </div>
+
 
                                 {{-- Delete Button --}}
                                 @if ($msg->user_id === auth()->id())
@@ -296,8 +326,10 @@
         @endif
 
     </div>
-</div>
 
+    <audio id="sendSound" src="{{ asset('sounds/send-aud.mp3') }}"></audio>
+    <audio id="receiveSound" src="{{ asset('sounds/rec-aud.mp3') }}"></audio>
+</div>
 
 @push('scripts')
     <script>
@@ -313,9 +345,20 @@
             Livewire.on('scrollToBottom', () => {
                 setTimeout(() => {
                     scrollToBottom();
+
+                    // 🔊 Play send sound as part of scroll (sender only)
+                    const snd = document.getElementById('sendSound');
+                    if (snd) snd.play();
+
                 }, 10); // Small delay ensures DOM updates are rendered
             });
-
         });
+
+        // document.addEventListener('livewire:initialized', () => {
+        //     Livewire.on('playReceiveSound', () => {
+        //         const sound = document.getElementById('receiveSound');
+        //         if (sound) sound.play();
+        //     });
+        // });
     </script>
 @endpush
