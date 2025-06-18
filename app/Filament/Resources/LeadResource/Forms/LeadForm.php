@@ -151,6 +151,7 @@ class LeadForm
                                         ->prefix('$')
                                         ->numeric()
                                         ->disabled()
+                                        ->nullable()
                                         ->formatStateUsing(function (?Lead $record, Get $get): string {
                                             if (!$record && !$get('leadAmounts')) return '0.00';
 
@@ -172,6 +173,7 @@ class LeadForm
                                         ->prefix('$')
                                         ->numeric() // Keep numeric for consistency, though disabled
                                         ->disabled()
+                                        ->nullable()
                                         ->formatStateUsing(function (?Lead $record, Get $get): string {
                                             if (!$record && !$get('amount_owed')) return '0.00';
 

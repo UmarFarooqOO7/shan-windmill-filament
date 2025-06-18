@@ -1,14 +1,22 @@
-<div class="row">
-    <div class="col-md-3 border-end px-0" style="height: 90vh;">
+<div class="row gy-3">
+    <div class="col-md-3 border-end px-0" style="height: 92vh;">
         <div class="d-flex flex-column h-100">
 
+
+            {{-- Go to Dashboard Button --}}
+            <div class="mx-3 d-flex justify-content-between align-items-center">
+                <a href="{{ url('/admin') }}" class="btn btn-sm btn-outline-success-app w-100">
+                    <i class="fa fa-arrow-left me-1"></i> Dashboard
+                </a>
+            </div>
             {{-- Search Bar --}}
             <div class="p-3 border-bottom sticky-top bg-white d-flex gap-2 align-items-center justify-content-between"
                 style="z-index: 1;">
                 <input type="text" wire:model.live.debounce.250ms="search" class="form-control"
                     placeholder="Search users..." />
 
-                <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#newChatModal">
+                <button class="btn btn-sm btn-outline-success-app" data-bs-toggle="modal"
+                    data-bs-target="#newChatModal">
                     <i class="fa fa-plus"></i>
                 </button>
             </div>
@@ -34,8 +42,9 @@
                                             class="rounded-circle" width="40" height="40">
                                         <div>{{ $user->name }}</div>
                                     </div>
-                                    <button wire:click="selectUser({{ $user->id }})" class="btn btn-sm btn-primary"
-                                        data-bs-dismiss="modal" wire:click="$set('showingModal', false)">Chat</button>
+                                    <button wire:click="selectUser({{ $user->id }})"
+                                        class="btn btn-sm btn-outline-success-app" data-bs-dismiss="modal"
+                                        wire:click="$set('showingModal', false)">Chat</button>
                                 </div>
                             @endforeach
                         </div>
@@ -49,7 +58,7 @@
             <div class="flex-grow-1 overflow-y-auto">
                 @forelse($this->users as $user)
                     <div wire:click="selectUser({{ $user->id }})"
-                        class="d-flex align-items-center justify-content-between px-3 py-2 border-bottom {{ $selectedUser && $selectedUser->id === $user->id ? 'bg-primary text-white' : 'bg-light' }}"
+                        class="user-container d-flex align-items-center justify-content-between px-3 py-2 border-bottom {{ $selectedUser && $selectedUser->id === $user->id ? 'bg-default-app' : 'bg-light' }}"
                         style="cursor: pointer;">
 
                         <div class="d-flex align-items-center gap-2">
@@ -73,7 +82,7 @@
         </div>
     </div>
 
-    <div class="col-md-9 d-flex flex-column px-0" style="height: 90vh;">
+    <div class="col-md-9 d-flex flex-column px-0" style="height: 92vh;">
         @if ($selectedChat)
             <div class="d-flex justify-content-between align-items-center border-bottom px-3 py-2 bg-white shadow-sm">
                 <!-- Left: User Avatar + Name -->
@@ -83,25 +92,29 @@
                     <div class="fw-semibold">{{ $selectedUser->name }}</div>
                 </div>
 
-                <!-- Right: Dropdown -->
-                <div class="dropdown" wire:ignore>
-                    <a class="btn btn-light btn-sm dropdown-toggle" href="#" role="button" id="dropdownMenuLink"
-                        data-bs-toggle="dropdown" aria-expanded="false">
-                        Options
-                    </a>
-
-                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdownMenuLink">
-                        <li>
-                            @if ($messages->isNotEmpty())
-                                <a class="dropdown-item text-danger" href="#" wire:click.prevent="deleteChat">
-                                    Delete Chat
-                                </a>
-                            @endif
-                        </li>
-
-                        {{-- <li><a class="dropdown-item text-muted" href="#">Mute</a></li> --}}
-                    </ul>
-                </div>
+                <!-- delete chat -->
+                @if ($messages->isNotEmpty())
+                    <div>
+                        <a href="#" class="btn btn-outline-danger btn-sm"
+                            x-on:click.prevent="
+                                Swal.fire({
+                                    title: 'Are you sure?',
+                                    text: 'This will permanently delete this chat!',
+                                    icon: 'warning',
+                                    showCancelButton: true,
+                                    confirmButtonColor: '#d33',
+                                    cancelButtonColor: '#3085d6',
+                                    confirmButtonText: 'Yes, delete it!'
+                                }).then((result) => {
+                                    if (result.isConfirmed) {
+                                        @this.call('deleteChat');
+                                    }
+                                });
+                        ">
+                            Delete Chat
+                        </a>
+                    </div>
+                @endif
             </div>
         @endif
 
@@ -165,7 +178,7 @@
                                                 <div>
                                                     <div class="fw-semibold">{{ $fileName }}</div>
                                                     <a href="{{ $fileUrl }}" target="_blank"
-                                                        class="btn btn-sm btn-outline-primary mt-1">Open</a>
+                                                        class="btn btn-sm btn-outline-success-app mt-1">Open</a>
                                                 </div>
                                             </div>
                                         @elseif(in_array($extension, ['doc', 'docx']))
@@ -174,7 +187,7 @@
                                                 <div>
                                                     <div class="fw-semibold">{{ $fileName }}</div>
                                                     <a href="{{ $fileUrl }}" target="_blank"
-                                                        class="btn btn-sm btn-outline-primary mt-1">Open</a>
+                                                        class="btn btn-sm btn-outline-success-app mt-1">Open</a>
                                                 </div>
                                             </div>
                                         @elseif(in_array($extension, ['xls', 'xlsx', 'csv']))
@@ -183,7 +196,7 @@
                                                 <div>
                                                     <div class="fw-semibold">{{ $fileName }}</div>
                                                     <a href="{{ $fileUrl }}" target="_blank"
-                                                        class="btn btn-sm btn-outline-success mt-1">Open</a>
+                                                        class="btn btn-sm btn-outline-success-app mt-1">Open</a>
                                                 </div>
                                             </div>
                                         @else
@@ -231,18 +244,31 @@
                         </div>
 
                     @empty
-                        <div class="text-muted">No messages yet.</div>
+                        <div
+                            class="d-flex flex-column justify-content-center align-items-center text-muted text-center my-5">
+                            <i class="fa-regular fa-paper-plane fs-1 text-secondary mb-3"></i>
+                            <h6 class="fw-semibold">No messages yet</h6>
+                            <p class="mb-0">Start the conversation by sending a message!</p>
+                        </div>
                     @endforelse
+
                 </div>
             @else
-                <div class="text-muted text-center">Select a user to chat with.</div>
+                <div class="d-flex flex-column justify-content-center align-items-center text-muted text-center h-100">
+                    <i class="fa-regular fa-comments fs-1 mb-3 text-primary"></i>
+                    <h5 class="fw-semibold">No chat selected</h5>
+                    <p class="mb-0">Please select a user from the left to start chatting.</p>
+                </div>
             @endif
+
         </div>
 
 
         @if ($selectedChat)
             <form wire:submit.prevent="sendMessage" class="d-flex flex-column gap-2 p-3"
                 enctype="multipart/form-data">
+
+                <div wire:loading wire:target="mediaFiles" class="text-muted small">Uploading...</div>
 
                 {{-- PREVIEW MULTIPLE FILES --}}
                 @if ($mediaFiles && count($mediaFiles))
@@ -293,7 +319,7 @@
                                 <!-- Close button -->
                                 <button type="button"
                                     class="btn btn-sm btn-close position-absolute top-0 end-0 bg-dark text-white rounded-circle p-1"
-                                    style="width: 14px; height: 14px; font-size: 11px;"
+                                    style="width: 13px; height: 13px; font-size: 10px;"
                                     wire:click="removeMedia({{ $index }})"> x
                                 </button>
                             </div>
@@ -312,13 +338,13 @@
                     <input type="text" wire:model="newMessage" class="form-control me-2"
                         placeholder="Type your message..." />
 
-                    <button class="btn btn-primary" type="submit">
+                    <button wire:loading.attr="disabled" wire:target="mediaFiles" class="btn btn-primary"
+                        type="submit">
                         <i class="fa-solid fa-paper-plane"></i>
                     </button>
                 </div>
 
                 {{-- Error and Uploading --}}
-                <div wire:loading wire:target="mediaFiles" class="text-muted small">Uploading...</div>
                 @error('mediaFiles.*')
                     <span class="text-danger small">{{ $message }}</span>
                 @enderror
