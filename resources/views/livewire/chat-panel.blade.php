@@ -1,7 +1,6 @@
-<div class="row gy-3">
-    <div class="col-md-3 border-end px-0" style="height: 92vh;">
+<div class="row gy-3 flex-column flex-md-row">
+    <div class="col-12 col-md-3 border-end px-0" style="height: 92vh;">
         <div class="d-flex flex-column h-100">
-
 
             {{-- Go to Dashboard Button --}}
             <div class="mx-3 d-flex justify-content-between align-items-center">
@@ -13,7 +12,7 @@
             <div class="p-3 border-bottom sticky-top bg-white d-flex gap-2 align-items-center justify-content-between"
                 style="z-index: 1;">
                 <input type="text" wire:model.live.debounce.250ms="search" class="form-control"
-                    placeholder="Search users..." />
+                    placeholder="Search {{ $activeTab === 'teams' ? 'teams' : 'users' }}..." />
 
                 <button class="btn btn-sm btn-outline-success-app" data-bs-toggle="modal"
                     data-bs-target="#newChatModal">
@@ -21,10 +20,65 @@
                 </button>
             </div>
 
+            {{-- Tabs --}}
+            <div class="d-flex">
+                <button
+                    class="btn w-50 rounded-0 {{ $activeTab === 'teams' ? 'btn-outline-success-app' : '' }}"
+                    wire:click="$set('activeTab', 'teams')">
+                    Teams
+                </button>
+                <button
+                    class="btn w-50 rounded-0 {{ $activeTab === 'users' ? 'btn-outline-success-app' : '' }}"
+                    wire:click="$set('activeTab', 'users')">
+                    Users
+                </button>
+            </div>
+
+            {{-- User / Team List --}}
+            <div class="flex-grow-1 overflow-y-auto">
+                @if ($activeTab === 'users')
+                    @forelse($this->users as $user)
+                        <div wire:click="selectUser({{ $user->id }})"
+                            class="user-container d-flex align-items-center justify-content-between px-3 py-2 border-bottom {{ $selectedUser && $selectedUser->id === $user->id ? 'bg-default-app' : 'bg-light' }}"
+                            style="cursor: pointer;">
+                            <div class="d-flex align-items-center gap-2">
+                                <img src="{{ 'https://ui-avatars.com/api/?name=' . urlencode($user->name) }}"
+                                    class="rounded-circle" width="40" height="40">
+                                <div class="fw-semibold">{{ $user->name }}</div>
+                            </div>
+
+                            @if ($user->unread_count > 0)
+                                <span class="badge bg-danger rounded-pill">{{ $user->unread_count }}</span>
+                            @endif
+                        </div>
+                    @empty
+                        <div class="text-muted text-center p-3">No users found.</div>
+                    @endforelse
+                @else
+                    @forelse($this->teams as $team)
+                        <div wire:click="openTeamChat({{ $team->id }})"
+                            class="user-container d-flex align-items-center justify-content-between px-3 py-2 border-bottom {{ $selectedChat && $selectedChat->team_id === $team->id ? 'bg-default-app' : 'bg-light' }}"
+                            style="cursor: pointer;">
+                            <div class="d-flex align-items-center gap-2">
+                                <i class="fa fa-users text-primary"></i>
+                                <div class="fw-semibold">{{ $team->name }}</div>
+                            </div>
+
+                            @if ($team->unread_count > 0)
+                                <span class="badge bg-danger rounded-pill">{{ $team->unread_count }}</span>
+                            @endif
+                        </div>
+                    @empty
+                        <div class="text-muted text-center p-3">No teams found.</div>
+                    @endforelse
+                @endif
+            </div>
+
+
             <!-- Modal -->
             <div class="modal fade" id="newChatModal" tabindex="-1" aria-labelledby="newChatModalLabel"
                 aria-hidden="true" wire:ignore.self>
-                <div class="modal-dialog modal-dialog-scrollable">
+                <div class="modal-dialog modal-fullscreen-sm-down modal-dialog-scrollable">
                     <div class="modal-content">
                         <div class="modal-header">
                             <h5 class="modal-title">Start New Chat</h5>
@@ -52,43 +106,16 @@
                 </div>
             </div>
 
-
-
-            {{-- Scrollable User List --}}
-            <div class="flex-grow-1 overflow-y-auto">
-                @forelse($this->users as $user)
-                    <div wire:click="selectUser({{ $user->id }})"
-                        class="user-container d-flex align-items-center justify-content-between px-3 py-2 border-bottom {{ $selectedUser && $selectedUser->id === $user->id ? 'bg-default-app' : 'bg-light' }}"
-                        style="cursor: pointer;">
-
-                        <div class="d-flex align-items-center gap-2">
-                            {{-- User Avatar --}}
-                            <img src="{{ 'https://ui-avatars.com/api/?name=' . urlencode($user->name) }}" alt="avatar"
-                                class="rounded-circle" width="40" height="40">
-
-                            {{-- User Name --}}
-                            <div class="fw-semibold">{{ $user->name }}</div>
-                        </div>
-
-                        {{-- Unread Badge --}}
-                        @if ($user->unread_count > 0)
-                            <span class="badge bg-danger rounded-pill">{{ $user->unread_count }}</span>
-                        @endif
-                    </div>
-                @empty
-                    <div class="text-muted text-center p-3">No users found.</div>
-                @endforelse
-            </div>
         </div>
     </div>
 
-    <div class="col-md-9 d-flex flex-column px-0" style="height: 92vh;">
+    <div class="col-12 col-md-9 d-flex flex-column px-0" style="height: 92vh;">
         @if ($selectedChat)
             <div class="d-flex justify-content-between align-items-center border-bottom px-3 py-2 bg-white shadow-sm">
                 <!-- Left: User Avatar + Name -->
                 <div class="d-flex align-items-center gap-2">
-                    <img src="{{ 'https://ui-avatars.com/api/?name=' . urlencode($selectedUser->name) }}" alt="Avatar"
-                        class="rounded-circle" width="40" height="40">
+                    <img src="{{ 'https://ui-avatars.com/api/?name=' . urlencode($selectedUser->name) }}"
+                        alt="Avatar" class="rounded-circle" width="40" height="40">
                     <div class="fw-semibold">{{ $selectedUser->name }}</div>
                 </div>
 

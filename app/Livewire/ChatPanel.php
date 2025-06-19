@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Auth;
 use App\Models\User;
 use App\Models\Chat;
 use App\Models\Message;
+use App\Models\Team;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Attributes\Computed;
@@ -25,6 +26,7 @@ class ChatPanel extends Component
     public $page = 1;
     public $hasMoreMessages = true;
 
+    public $activeTab = 'teams';
     public $newMessage = '';
     public $search = '';
     public $mediaFiles = [];
@@ -106,6 +108,27 @@ class ChatPanel extends Component
             ->orderBy('name')
             ->get();
     }
+
+    #[Computed]
+    public function teams()
+    {
+        $authId = auth()->id();
+
+        return Team::whereHas('members', fn($q) => $q->where('users.id', $authId))
+            ->when($this->search, fn($q) => $q->where('name', 'like', '%' . $this->search . '%'))
+            ->withCount([
+                'chat as unread_count' => function ($q) use ($authId) {
+                    $q->whereHas(
+                        'messages',
+                        fn($q2) => $q2
+                            ->where('is_read', false)
+                            ->where('user_id', '!=', $authId)
+                    );
+                }
+            ])
+            ->get();
+    }
+
 
     public function loadMessages($mode = 'initial') // mode: 'initial', 'scroll', 'poll'
     {

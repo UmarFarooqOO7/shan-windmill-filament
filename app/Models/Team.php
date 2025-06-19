@@ -34,4 +34,9 @@ class Team extends Model
     {
         return $this->belongsToMany(Lead::class, 'leads_teams');
     }
+    
+    public function chat()
+    {
+        return $this->hasOne(Chat::class, 'team_id');
+    }
 }

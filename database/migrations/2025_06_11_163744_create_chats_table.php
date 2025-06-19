@@ -15,6 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('name')->nullable(); // optional, for group chats
             $table->boolean('is_group')->default(false);
+            $table->foreignId('team_id')->constrained()->onDelete('cascade')->nullable();
             $table->timestamps();
         });
     }

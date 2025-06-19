@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Chat extends Model
 {
-    protected $fillable = ['name', 'is_group'];
+    protected $fillable = ['name', 'is_group', 'team_id'];
 
     public function users()
     {
@@ -16,5 +16,9 @@ class Chat extends Model
     public function messages()
     {
         return $this->hasMany(Message::class);
+    }
+    public function team()
+    {
+        return $this->belongsTo(Team::class);
     }
 }
