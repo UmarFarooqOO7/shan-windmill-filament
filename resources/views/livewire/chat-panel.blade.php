@@ -22,13 +22,11 @@
 
             {{-- Tabs --}}
             <div class="d-flex">
-                <button
-                    class="btn w-50 rounded-0 {{ $activeTab === 'teams' ? 'btn-outline-success-app' : '' }}"
+                <button class="btn w-50 rounded-0 {{ $activeTab === 'teams' ? 'btn-outline-success-app border border-light' : '' }}"
                     wire:click="$set('activeTab', 'teams')">
                     Teams
                 </button>
-                <button
-                    class="btn w-50 rounded-0 {{ $activeTab === 'users' ? 'btn-outline-success-app' : '' }}"
+                <button class="btn w-50 rounded-0 {{ $activeTab === 'users' ? 'btn-outline-success-app border border-light' : '' }}"
                     wire:click="$set('activeTab', 'users')">
                     Users
                 </button>
@@ -60,7 +58,7 @@
                             class="user-container d-flex align-items-center justify-content-between px-3 py-2 border-bottom {{ $selectedChat && $selectedChat->team_id === $team->id ? 'bg-default-app' : 'bg-light' }}"
                             style="cursor: pointer;">
                             <div class="d-flex align-items-center gap-2">
-                                <i class="fa fa-users text-primary"></i>
+                                <i class="fa fa-users text-success"></i>
                                 <div class="fw-semibold">{{ $team->name }}</div>
                             </div>
 
@@ -85,26 +83,54 @@
                             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"
                                 wire:click="$set('showingModal', false)"></button>
                         </div>
-                        <div class="modal-body">
-                            <input type="text" class="form-control mb-3" wire:model.live.debounce.300ms="modalSearch"
-                                placeholder="Search users..." />
+                        <div class="modal-body p-0">
 
-                            @foreach ($this->allUsers as $user)
-                                <div class="d-flex align-items-center justify-content-between border-bottom py-2">
-                                    <div class="d-flex align-items-center gap-2">
-                                        <img src="{{ 'https://ui-avatars.com/api/?name=' . urlencode($user->name) }}"
-                                            class="rounded-circle" width="40" height="40">
-                                        <div>{{ $user->name }}</div>
-                                    </div>
-                                    <button wire:click="selectUser({{ $user->id }})"
-                                        class="btn btn-sm btn-outline-success-app" data-bs-dismiss="modal"
-                                        wire:click="$set('showingModal', false)">Chat</button>
-                                </div>
-                            @endforeach
+                            {{-- Search --}}
+                            <div class="p-3 border-bottom">
+                                <input type="text" class="form-control" wire:model.live.debounce.300ms="modalSearch"
+                                    placeholder="Search {{ $activeTab === 'teams' ? 'teams' : 'users' }}..." />
+                            </div>
+
+                            {{-- List --}}
+                            <div class="p-3">
+                                @if ($activeTab === 'users')
+                                    @forelse ($this->filteredModalUsers as $user)
+                                        <div
+                                            class="d-flex align-items-center justify-content-between border-bottom py-2">
+                                            <div class="d-flex align-items-center gap-2">
+                                                <img src="{{ 'https://ui-avatars.com/api/?name=' . urlencode($user->name) }}"
+                                                    class="rounded-circle" width="40" height="40">
+                                                <div>{{ $user->name }}</div>
+                                            </div>
+                                            <button wire:click="selectUser({{ $user->id }})"
+                                                class="btn btn-sm btn-outline-success-app" data-bs-dismiss="modal"
+                                                wire:click="$set('showingModal', false)">Chat</button>
+                                        </div>
+                                    @empty
+                                        <div class="text-muted text-center">No users found.</div>
+                                    @endforelse
+                                @else
+                                    @forelse ($this->filteredModalTeams as $team)
+                                        <div
+                                            class="d-flex align-items-center justify-content-between border-bottom py-2">
+                                            <div class="d-flex align-items-center gap-2">
+                                                <i class="fa-solid fa-users text-success"></i>
+                                                <div>{{ $team->name }}</div>
+                                            </div>
+                                            <button wire:click="openTeamChat({{ $team->id }})"
+                                                class="btn btn-sm btn-outline-success-app" data-bs-dismiss="modal"
+                                                wire:click="$set('showingModal', false)">Group Chat</button>
+                                        </div>
+                                    @empty
+                                        <div class="text-muted text-center">No teams found.</div>
+                                    @endforelse
+                                @endif
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
+
 
         </div>
     </div>
@@ -112,32 +138,37 @@
     <div class="col-12 col-md-9 d-flex flex-column px-0" style="height: 92vh;">
         @if ($selectedChat)
             <div class="d-flex justify-content-between align-items-center border-bottom px-3 py-2 bg-white shadow-sm">
-                <!-- Left: User Avatar + Name -->
+                <!-- Left: Avatar + Name (User or Team) -->
                 <div class="d-flex align-items-center gap-2">
-                    <img src="{{ 'https://ui-avatars.com/api/?name=' . urlencode($selectedUser->name) }}"
-                        alt="Avatar" class="rounded-circle" width="40" height="40">
-                    <div class="fw-semibold">{{ $selectedUser->name }}</div>
+                    @if ($selectedChat->team_id)
+                        <i class="fa fa-users text-success fs-4"></i>
+                        <div class="fw-semibold">{{ $selectedChat->team->name }}</div>
+                    @elseif (isset($selectedUser))
+                        <img src="{{ 'https://ui-avatars.com/api/?name=' . urlencode($selectedUser->name) }}"
+                            alt="Avatar" class="rounded-circle" width="40" height="40">
+                        <div class="fw-semibold">{{ $selectedUser->name }}</div>
+                    @endif
                 </div>
 
-                <!-- delete chat -->
+                <!-- Delete Chat -->
                 @if ($messages->isNotEmpty())
                     <div>
                         <a href="#" class="btn btn-outline-danger btn-sm"
                             x-on:click.prevent="
-                                Swal.fire({
-                                    title: 'Are you sure?',
-                                    text: 'This will permanently delete this chat!',
-                                    icon: 'warning',
-                                    showCancelButton: true,
-                                    confirmButtonColor: '#d33',
-                                    cancelButtonColor: '#3085d6',
-                                    confirmButtonText: 'Yes, delete it!'
-                                }).then((result) => {
-                                    if (result.isConfirmed) {
-                                        @this.call('deleteChat');
-                                    }
-                                });
-                        ">
+                        Swal.fire({
+                            title: 'Are you sure?',
+                            text: 'This will permanently delete this chat!',
+                            icon: 'warning',
+                            showCancelButton: true,
+                            confirmButtonColor: '#d33',
+                            cancelButtonColor: '#3085d6',
+                            confirmButtonText: 'Yes, delete it!'
+                        }).then((result) => {
+                            if (result.isConfirmed) {
+                                @this.call('deleteChat');
+                            }
+                        });
+                ">
                             Delete Chat
                         </a>
                     </div>
@@ -145,6 +176,7 @@
             </div>
         @endif
 
+        <!-- Scrollable Messages -->
         <div id="chat-box" class="overflow-auto flex-grow-1 border-bottom p-3"
             wire:poll.keep-alive.5000ms="pollNewMessages" x-data="{ previousScrollHeight: 0, loading: false }"
             x-on:scroll.passive="
@@ -152,7 +184,6 @@
             loading = true;
             previousScrollHeight = $el.scrollHeight;
             @this.call('loadMoreMessages').then(() => {
-                // After Livewire updates DOM
                 $nextTick(() => {
                     const newScrollHeight = $el.scrollHeight;
                     $el.scrollTop = newScrollHeight - previousScrollHeight - 20;
@@ -162,11 +193,13 @@
         }
     ">
 
+
             @if ($selectedChat)
                 <div>
                     @forelse($messages as $msg)
                         @php
                             $attachments = $msg->attachment ? json_decode($msg->attachment, true) : [];
+                            $isMine = $msg->user_id === auth()->id();
                         @endphp
 
                         {{-- Message Bubble --}}
@@ -176,6 +209,13 @@
                                 style="max-width: 70%; background-color: {{ $msg->user_id === auth()->id() ? '#dcf8c6' : '#f1f0f0' }};"
                                 onmouseover="this.querySelector('.delete-btn').classList.remove('d-none')"
                                 onmouseout="this.querySelector('.delete-btn').classList.add('d-none')">
+
+                                {{-- Show Sender's Name in Team Chat --}}
+                                @if ($selectedChat?->team_id && !$isMine)
+                                    <div class="fw-semibold text-primary mb-1" style="font-size: 13px;">
+                                        {{ $msg->user->name }}
+                                    </div>
+                                @endif
 
                                 {{-- Message Text --}}
                                 @if ($msg->message)
@@ -239,28 +279,27 @@
                                     </div>
                                 @endforeach
 
+                                {{-- Footer: Time & Read --}}
                                 <div class="d-flex align-items-center justify-content-between gap-3">
-                                    {{-- Time --}}
                                     <small class="text-muted d-block mt-1" style="font-size: 10px;">
                                         {{ $msg->created_at->format('h:i A') }}
                                     </small>
 
-                                    {{-- double / single tick --}}
-                                    @if ($msg->user_id === auth()->id())
+                                    @if ($isMine)
                                         <div class="text-end text-muted small mt-1">
                                             @if ($msg->is_read)
                                                 <i class="fa-solid fa-check-double text-primary"></i>
-                                                {{-- Read (✓✓ blue) --}}
                                             @else
-                                                <i class="fa-solid fa-check"></i> {{-- Sent (✓) --}}
+                                                <i class="fa-solid fa-check"></i>
                                             @endif
                                         </div>
                                     @endif
                                 </div>
 
 
+
                                 {{-- Delete Button --}}
-                                @if ($msg->user_id === auth()->id())
+                                @if ($isMine)
                                     <button wire:click="deleteMessage({{ $msg->id }})"
                                         class="btn btn-sm btn-danger btn-circle delete-btn position-absolute top-0 end-0 mt-1 me-1 d-none"
                                         style="padding: 2px 6px; font-size: 10px;" title="Delete">

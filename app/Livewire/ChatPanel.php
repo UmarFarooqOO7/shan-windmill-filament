@@ -20,6 +20,7 @@ class ChatPanel extends Component
 
     public $selectedUser = null;
     public $selectedChat = null;
+    public $isTeamChat = null;
 
     public $messages = [];
     public $perPage = 10;
@@ -38,7 +39,7 @@ class ChatPanel extends Component
     // modal open and users show with search
 
     #[Computed]
-    public function allUsers()
+    public function filteredModalUsers()
     {
         return User::query()
             ->where('id', '!=', Auth::id())
@@ -49,6 +50,14 @@ class ChatPanel extends Component
             ->get();
     }
 
+    #[Computed]
+    public function filteredModalTeams()
+    {
+        return Team::query()
+            ->whereHas('members', fn($q) => $q->where('users.id', auth()->id()))
+            ->when($this->modalSearch, fn($q) => $q->where('name', 'like', '%' . $this->modalSearch . '%'))
+            ->get();
+    }
     public function updatedShowingModal($val)
     {
         if (!$val) {
@@ -80,6 +89,18 @@ class ChatPanel extends Component
         $this->perPage = 10;
         $this->loadMessages();
         // Dispatch scroll event
+        $this->dispatch('scrollToBottom');
+    }
+
+    public function openTeamChat($teamId)
+    {
+        $this->selectedChat = Chat::firstOrCreate([
+            'team_id' => $teamId,
+        ]);
+
+        $this->selectedUser = null;
+        $this->page = 1;
+        $this->loadMessages();
         $this->dispatch('scrollToBottom');
     }
 
@@ -116,16 +137,17 @@ class ChatPanel extends Component
 
         return Team::whereHas('members', fn($q) => $q->where('users.id', $authId))
             ->when($this->search, fn($q) => $q->where('name', 'like', '%' . $this->search . '%'))
-            ->withCount([
-                'chat as unread_count' => function ($q) use ($authId) {
-                    $q->whereHas(
-                        'messages',
-                        fn($q2) => $q2
-                            ->where('is_read', false)
-                            ->where('user_id', '!=', $authId)
-                    );
-                }
-            ])
+            ->whereHas('chat.messages') // ✅ Only teams that have at least one message
+            // ->withCount([
+            //     'chat as unread_count' => function ($q) use ($authId) {
+            //         $q->whereHas(
+            //             'messages',
+            //             fn($q2) => $q2
+            //                 ->where('is_read', false)
+            //                 ->where('user_id', '!=', $authId)
+            //         );
+            //     }
+            // ])
             ->get();
     }
 
@@ -176,27 +198,19 @@ class ChatPanel extends Component
             $this->hasMoreMessages = $total > $this->page * $this->perPage;
         }
 
-        // Mark unread as read
-        $this->selectedChat->messages()
-            ->where('user_id', '!=', Auth::id())
-            ->where('is_read', false)
-            ->update(['is_read' => true]);
+        // Mark unread as read (only for user chat)
+        if ($this->selectedChat->team_id === null) {
+            $this->selectedChat->messages()
+                ->where('user_id', '!=', Auth::id())
+                ->where('is_read', false)
+                ->update(['is_read' => true]);
+        }
     }
 
     public function pollNewMessages()
     {
 
         if (!$this->selectedChat) return;
-
-        // $UnreadMsgs = $this->selectedChat->messages()
-        //     ->where('user_id', '!=', Auth::id())
-        //     ->where('is_read', false)
-        //     ->count();
-
-        // if ($UnreadMsgs > 0) {
-        //     $this->dispatch('playReceiveSound');
-        // }
-
         $this->loadMessages('poll');
     }
 
@@ -282,8 +296,6 @@ class ChatPanel extends Component
         $this->selectedChat = null;
         $this->selectedUser = null;
     }
-
-
 
     public function render()
     {
