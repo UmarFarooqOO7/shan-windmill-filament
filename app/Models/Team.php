@@ -34,9 +34,22 @@ class Team extends Model
     {
         return $this->belongsToMany(Lead::class, 'leads_teams');
     }
-    
+
     public function chat()
     {
         return $this->hasOne(Chat::class, 'team_id');
+    }
+
+    // This lets you access messages directly via the team
+    public function messages()
+    {
+        return $this->hasManyThrough(
+            \App\Models\Message::class,
+            \App\Models\Chat::class,
+            'team_id',    // Foreign key on Chat table
+            'chat_id',    // Foreign key on Message table
+            'id',         // Local key on Team
+            'id'          // Local key on Chat
+        );
     }
 }

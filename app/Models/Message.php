@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Message extends Model
 {
-    protected $fillable = ['chat_id', 'user_id', 'message', 'is_read','attachment'];
+    protected $fillable = ['chat_id', 'user_id', 'message', 'is_read', 'attachment'];
 
     public function chat()
     {
@@ -16,5 +16,11 @@ class Message extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function readers()
+    {
+        return $this->belongsToMany(User::class, 'team_message_reads')
+            ->withTimestamps();
     }
 }

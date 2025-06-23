@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Models\Chat;
 use App\Models\Message;
 use App\Models\Team;
+use App\Models\TeamMessageRead;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Attributes\Computed;
@@ -134,20 +135,42 @@ class ChatPanel extends Component
     public function teams()
     {
         $authId = auth()->id();
+        // mark messages as read for team chats
+        if ($this->selectedChat && $this->selectedChat->team_id) {
+            $unreadIds = $this->messages
+                ->filter(fn($msg) => $msg->user_id !== $authId)
+                ->filter(fn($msg) => !$msg->readers->contains($authId))
+                ->pluck('id');
+
+            if ($unreadIds->isNotEmpty()) {
+                $now = now();
+                $data = $unreadIds->map(fn($id) => [
+                    'message_id' => $id,
+                    'user_id' => $authId,
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ])->toArray();
+
+                TeamMessageRead::insertOrIgnore($data);
+            }
+        }
 
         return Team::whereHas('members', fn($q) => $q->where('users.id', $authId))
             ->when($this->search, fn($q) => $q->where('name', 'like', '%' . $this->search . '%'))
-            ->whereHas('chat.messages') // ✅ Only teams that have at least one message
-            // ->withCount([
-            //     'chat as unread_count' => function ($q) use ($authId) {
-            //         $q->whereHas(
-            //             'messages',
-            //             fn($q2) => $q2
-            //                 ->where('is_read', false)
-            //                 ->where('user_id', '!=', $authId)
-            //         );
-            //     }
-            // ])
+            ->whereHas('messages') // ✅ this now works!
+            ->withCount([
+                'messages as unread_count' => function ($q) use ($authId) {
+                    $q->where('user_id', '!=', $authId)
+                        ->whereDoesntHave('readers', fn($q) => $q->where('user_id', $authId))
+                        ->when($this->selectedChat?->team_id, function ($q, $selectedTeamId) {
+                            $q->whereHas(
+                                'chat',
+                                fn($chat) =>
+                                $chat->where('team_id', '!=', $selectedTeamId)
+                            );
+                        });
+                }
+            ])
             ->get();
     }
 
@@ -179,6 +202,11 @@ class ChatPanel extends Component
                 $this->dispatch('scrollToBottom');
             }
         } else {
+
+            if ($this->selectedChat->team_id) {
+                $query = $query->with('readers');
+            }
+
             // Scroll or initial load
             $messages = $query
                 ->orderByDesc('created_at')

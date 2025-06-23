@@ -3,6 +3,7 @@
 namespace App\Providers\Filament;
 
 use App\Filament\Pages\Calendar; // Assuming this is your Calendar Page class
+use App\Models\Message;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -20,6 +21,7 @@ use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 use Saade\FilamentFullCalendar\FilamentFullCalendarPlugin;
 use Filament\Navigation\NavigationItem;
+use Illuminate\Support\Facades\Auth;
 
 class AdminPanelProvider extends PanelProvider
 {
@@ -68,9 +70,42 @@ class AdminPanelProvider extends PanelProvider
             )
             ->navigationItems([
                 NavigationItem::make()
-                    ->label('Chat')
+                    ->label('Chat') // ✅ This works, because closure has access to `auth()`
                     ->icon('heroicon-o-chat-bubble-left-right')
-                    ->url('/admin/chat') // ✅ Use direct URL string instead of route() helper
+                    ->url('/admin/chat')
+                    ->badge(function () {
+                        $authId = auth()->user()->id; // ✅ Safe
+                        if (! $authId) return null;
+
+                        return Message::where(function ($query) use ($authId) {
+                            $query
+                                ->where(function ($q) use ($authId) {
+                                    $q->whereHas('chat', function ($c) use ($authId) {
+                                        $c->whereNotNull('team_id')
+                                            ->whereHas('team.members', fn($q2) => $q2->where('users.id', $authId));
+                                    })
+                                        ->where('user_id', '!=', $authId)
+                                        ->whereDoesntHave(
+                                            'readers',
+                                            fn($q) =>
+                                            $q->where('user_id', $authId)
+                                        );
+                                })
+                                ->orWhere(function ($q) use ($authId) {
+                                    $q->whereHas('chat', function ($c) use ($authId) {
+                                        $c->whereNull('team_id')
+                                            ->whereHas(
+                                                'users',
+                                                fn($u) =>
+                                                $u->where('users.id', $authId)
+                                            );
+                                    })
+                                        ->where('user_id', '!=', $authId)
+                                        ->where('is_read', false);
+                                });
+                        })
+                            ->count() ?: null;
+                    })
                     ->sort(90),
             ]);
     }
