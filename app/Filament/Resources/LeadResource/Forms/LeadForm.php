@@ -149,7 +149,7 @@ class LeadForm
                                     Forms\Components\TextInput::make('total_cleared')
                                         ->label('Amount Cleared')
                                         ->prefix('$')
-                                        ->numeric()
+                                        // ->numeric()
                                         ->disabled()
                                         ->nullable()
                                         ->formatStateUsing(function (?Lead $record, Get $get): string {
@@ -171,7 +171,7 @@ class LeadForm
                                     Forms\Components\TextInput::make('total_remaining')
                                         ->label('Amount Remaining')
                                         ->prefix('$')
-                                        ->numeric() // Keep numeric for consistency, though disabled
+                                        // ->numeric() // Keep numeric for consistency, though disabled
                                         ->disabled()
                                         ->nullable()
                                         ->formatStateUsing(function (?Lead $record, Get $get): string {

@@ -26,8 +26,8 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         // Register Lead model observer
-        Lead::observe(LeadObserver::class);
-        Event::observe(EventObserver::class);
+        // Lead::observe(LeadObserver::class);
+        // Event::observe(EventObserver::class);
 
         // Remove ONLY_FULL_GROUP_BY from SQL mode
         DB::statement("SET SQL_MODE=''");

@@ -275,7 +275,7 @@ class ChatPanel extends Component
         $message =  $this->selectedChat->messages()->create([
             'user_id' => Auth::id(),
             'message' => $this->newMessage ?? '',
-            'attachment' => count($filePaths) ? json_encode($filePaths) : null,
+            'attachments' => count($filePaths) ? json_encode($filePaths) : null,
         ]);
 
 
@@ -295,8 +295,8 @@ class ChatPanel extends Component
         if ($message && $message->user_id === auth()->id()) {
 
             // Delete attached files from storage
-            if ($message->attachment) {
-                $attachments = json_decode($message->attachment, true);
+            if ($message->attachments) {
+                $attachments = json_decode($message->attachments, true);
 
                 foreach ($attachments as $filePath) {
                     if ($filePath && Storage::disk('public')->exists($filePath)) {

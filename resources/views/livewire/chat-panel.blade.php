@@ -198,7 +198,7 @@
                 <div>
                     @forelse($messages as $msg)
                         @php
-                            $attachments = $msg->attachment ? json_decode($msg->attachment, true) : [];
+                            $attachments = $msg->attachments ? json_decode($msg->attachments, true) : [];
                             $isMine = $msg->user_id === auth()->id();
                         @endphp
 
