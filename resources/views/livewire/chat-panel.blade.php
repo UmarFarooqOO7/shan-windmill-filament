@@ -22,11 +22,13 @@
 
             {{-- Tabs --}}
             <div class="d-flex">
-                <button class="btn w-50 rounded-0 {{ $activeTab === 'teams' ? 'btn-outline-success-app border border-light' : '' }}"
+                <button
+                    class="btn w-50 rounded-0 {{ $activeTab === 'teams' ? 'btn-outline-success-app border border-light' : '' }}"
                     wire:click="$set('activeTab', 'teams')">
                     Teams
                 </button>
-                <button class="btn w-50 rounded-0 {{ $activeTab === 'users' ? 'btn-outline-success-app border border-light' : '' }}"
+                <button
+                    class="btn w-50 rounded-0 {{ $activeTab === 'users' ? 'btn-outline-success-app border border-light' : '' }}"
                     wire:click="$set('activeTab', 'users')">
                     Users
                 </button>
@@ -136,21 +138,68 @@
     </div>
 
     <div class="col-12 col-md-9 d-flex flex-column px-0" style="height: 92vh;">
-        @if ($selectedChat)
-            <div class="d-flex justify-content-between align-items-center border-bottom px-3 py-2 bg-white shadow-sm">
-                <!-- Left: Avatar + Name (User or Team) -->
-                <div class="d-flex align-items-center gap-2">
-                    @if ($selectedChat->team_id)
-                        <i class="fa fa-users text-success fs-4"></i>
-                        <div class="fw-semibold">{{ $selectedChat->team->name }}</div>
-                    @elseif (isset($selectedUser))
-                        <img src="{{ 'https://ui-avatars.com/api/?name=' . urlencode($selectedUser->name) }}"
-                            alt="Avatar" class="rounded-circle" width="40" height="40">
-                        <div class="fw-semibold">{{ $selectedUser->name }}</div>
-                    @endif
+        <div class="d-flex justify-content-between align-items-center border-bottom px-3 py-2 bg-white shadow-sm">
+
+            {{-- chat user/team name + notifications --}}
+            <div class="d-flex align-items-center gap-2">
+                @if ($selectedChat)
+                    <!-- Left: Avatar + Name (User or Team) -->
+                    <div class="d-flex align-items-center gap-2">
+                        @if ($selectedChat->team_id)
+                            <i class="fa fa-users text-success fs-4"></i>
+                            <div class="fw-semibold">{{ $selectedChat->team->name }}</div>
+                        @elseif (isset($selectedUser))
+                            <img src="{{ 'https://ui-avatars.com/api/?name=' . urlencode($selectedUser->name) }}"
+                                alt="Avatar" class="rounded-circle" width="40" height="40">
+                            <div class="fw-semibold">{{ $selectedUser->name }}</div>
+                        @endif
+                    </div>
+
+                @endif
+
+                <!-- Notification Bell & Dropdown -->
+                @php
+                    $notifications = auth()->user()->unreadNotifications()->limit(5)->latest()->get();
+                    $unreadCount = $selectedChat
+                        ? auth()->user()->unreadNotifications->where('data.chat_id', $selectedChat->id)->count()
+                        : 0;
+                @endphp
+
+                <div class="dropdown me-2">
+                    <a class="btn btn-outline-secondary btn-sm position-relative" href="#" role="button"
+                        id="notificationDropdown" data-bs-toggle="dropdown" aria-expanded="false"
+                        @if ($unreadCount) wire:click="markChatNotificationsAsRead" @endif>
+                        <i class="fa fa-bell"></i>
+
+                        @if ($unreadCount)
+                            <span
+                                class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                                {{ $unreadCount }}
+                            </span>
+                        @endif
+                    </a>
+
+                    <ul class="dropdown-menu dropdown-menu-end shadow" aria-labelledby="notificationDropdown"
+                        style="width: 300px;" wire:ignore.self>
+                        @forelse($notifications as $notification)
+                            <li class="px-3 py-2 border-bottom small">
+                                <div class="fw-semibold">{{ $notification->data['sender_name'] }}</div>
+                                <div class="text-muted text-truncate" title="{{ $notification->data['message'] }}">
+                                    {{ \Illuminate\Support\Str::limit($notification->data['message'], 50) }}
+                                </div>
+                                <small
+                                    class="text-muted">{{ \Carbon\Carbon::parse($notification->created_at)->diffForHumans() }}</small>
+                            </li>
+                        @empty
+                            <li class="px-3 py-2 text-muted text-center">No new notifications</li>
+                        @endforelse
+                    </ul>
                 </div>
 
-                <!-- Delete Chat -->
+            </div>
+
+            <!-- Delete Chat -->
+            @if ($selectedChat)
                 @if ($messages->isNotEmpty())
                     <div>
                         <a href="#" class="btn btn-outline-danger btn-sm"
@@ -173,8 +222,8 @@
                         </a>
                     </div>
                 @endif
-            </div>
-        @endif
+            @endif
+        </div>
 
         <!-- Scrollable Messages -->
         <div id="chat-box" class="overflow-auto flex-grow-1 border-bottom p-3"

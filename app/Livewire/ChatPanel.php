@@ -9,6 +9,7 @@ use App\Models\Chat;
 use App\Models\Message;
 use App\Models\Team;
 use App\Models\TeamMessageRead;
+use App\Notifications\NewChatMessage;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Attributes\Computed;
@@ -278,6 +279,25 @@ class ChatPanel extends Component
             'attachments' => count($filePaths) ? json_encode($filePaths) : null,
         ]);
 
+        // Notify users (Team or One-to-One)
+        if ($this->selectedChat->team_id) {
+            // 🔔 TEAM CHAT
+            $members = $this->selectedChat->team->members;
+
+            foreach ($members as $user) {
+                if ($user->id !== Auth::id()) {
+                    $user->notify(new NewChatMessage($message, Auth::user(), 'team'));
+                }
+            }
+        } else {
+            // 👤 ONE-TO-ONE CHAT
+            foreach ($this->selectedChat->users as $user) {
+                if ($user->id !== Auth::id()) {
+                    $user->notify(new NewChatMessage($message, Auth::user(), 'user'));
+                }
+            }
+        }
+
 
         $this->newMessage = '';
         $this->mediaFiles = [];
@@ -287,6 +307,19 @@ class ChatPanel extends Component
         // Dispatch scroll event
         $this->dispatch('scrollToBottom');
     }
+
+    public function markChatNotificationsAsRead()
+    {
+        if($this->selectedChat){
+            $chatId = $this->selectedChat->id;
+    
+            auth()->user()
+                ->unreadNotifications()
+                ->where('data->chat_id', $chatId)
+                ->update(['read_at' => now()]);
+        }
+    }
+
 
     public function deleteMessage($id)
     {
