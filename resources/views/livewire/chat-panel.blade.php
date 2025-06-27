@@ -157,18 +157,9 @@
 
                 @endif
 
-                <!-- Notification Bell & Dropdown -->
-                @php
-                    $notifications = auth()->user()->unreadNotifications()->limit(5)->latest()->get();
-                    $unreadCount = $selectedChat
-                        ? auth()->user()->unreadNotifications->where('data.chat_id', $selectedChat->id)->count()
-                        : 0;
-                @endphp
-
-                <div class="dropdown me-2">
+                <div class="dropdown me-2" wire:ignore.self>
                     <a class="btn btn-outline-secondary btn-sm position-relative" href="#" role="button"
-                        id="notificationDropdown" data-bs-toggle="dropdown" aria-expanded="false"
-                        @if ($unreadCount) wire:click="markChatNotificationsAsRead" @endif>
+                        id="notificationDropdown" data-bs-toggle="dropdown" aria-expanded="false">
                         <i class="fa fa-bell"></i>
 
                         @if ($unreadCount)
@@ -181,20 +172,35 @@
 
                     <ul class="dropdown-menu dropdown-menu-end shadow" aria-labelledby="notificationDropdown"
                         style="width: 300px;" wire:ignore.self>
+
+                        @if ($unreadCount)
+                            <li class="d-flex justify-content-between align-items-center px-3 py-2 border-bottom">
+                                <span class="fw-semibold">Notifications</span>
+                                <button wire:click.prevent="markAllNotificationsAsRead" x-on:click.stop
+                                    class="btn btn-link btn-sm p-0 text-primary">
+                                    Mark all as read
+                                </button>
+                            </li>
+                        @endif
+
                         @forelse($notifications as $notification)
-                            <li class="px-3 py-2 border-bottom small">
+                            <li class="px-3 py-2 border-bottom small" style="cursor: pointer;"
+                                wire:click.prevent="markNotificationAsRead('{{ $notification->id }}')"
+                                x-on:click.stop>
                                 <div class="fw-semibold">{{ $notification->data['sender_name'] }}</div>
                                 <div class="text-muted text-truncate" title="{{ $notification->data['message'] }}">
                                     {{ \Illuminate\Support\Str::limit($notification->data['message'], 50) }}
                                 </div>
-                                <small
-                                    class="text-muted">{{ \Carbon\Carbon::parse($notification->created_at)->diffForHumans() }}</small>
+                                <small class="text-muted">
+                                    {{ \Carbon\Carbon::parse($notification->created_at)->diffForHumans() }}
+                                </small>
                             </li>
                         @empty
                             <li class="px-3 py-2 text-muted text-center">No new notifications</li>
                         @endforelse
                     </ul>
                 </div>
+
 
             </div>
 

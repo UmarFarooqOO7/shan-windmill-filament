@@ -36,6 +36,37 @@ class ChatPanel extends Component
     public bool $showingModal = false;
     public string $modalSearch = '';
 
+    public $notifications = [];
+    public $unreadCount = 0;
+
+    public function loadNotifications()
+    {
+        $user = auth()->user();
+
+        $this->notifications = $user->unreadNotifications()->latest()->limit(5)->get();
+
+        $this->unreadCount = $this->selectedChat
+            ? $user->unreadNotifications->where('data.chat_id', $this->selectedChat->id)->count()
+            : $user->unreadNotifications()->count();
+    }
+
+    public function markAllNotificationsAsRead()
+    {
+        auth()->user()->unreadNotifications->markAsRead();
+        $this->loadNotifications();
+    }
+    public function markNotificationAsRead($id)
+    {
+        $notification = auth()->user()->unreadNotifications()->where('id', $id)->first();
+
+        if ($notification) {
+            $notification->markAsRead();
+        }
+
+        $this->loadNotifications();
+    }
+
+
 
 
     // modal open and users show with search
@@ -310,9 +341,9 @@ class ChatPanel extends Component
 
     public function markChatNotificationsAsRead()
     {
-        if($this->selectedChat){
+        if ($this->selectedChat) {
             $chatId = $this->selectedChat->id;
-    
+
             auth()->user()
                 ->unreadNotifications()
                 ->where('data->chat_id', $chatId)
