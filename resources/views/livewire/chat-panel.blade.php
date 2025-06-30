@@ -157,7 +157,7 @@
 
                 @endif
 
-                <div class="dropdown me-2" wire:ignore.self>
+                {{-- <div class="dropdown me-2">
                     <a class="btn btn-outline-secondary btn-sm position-relative" href="#" role="button"
                         id="notificationDropdown" data-bs-toggle="dropdown" aria-expanded="false">
                         <i class="fa fa-bell"></i>
@@ -171,7 +171,7 @@
                     </a>
 
                     <ul class="dropdown-menu dropdown-menu-end shadow" aria-labelledby="notificationDropdown"
-                        style="width: 300px;" wire:ignore.self>
+                        style="width: 300px; max-height: 300px; overflow-y: auto;">
 
                         @if ($unreadCount)
                             <li class="d-flex justify-content-between align-items-center px-3 py-2 border-bottom">
@@ -184,14 +184,22 @@
                         @endif
 
                         @forelse($notifications as $notification)
-                            <li class="px-3 py-2 border-bottom small" style="cursor: pointer;"
+                            <li class="px-3 py-2 border-bottom small d-flex justify-content-between align-items-start gap-2"
+                                style="cursor: pointer;"
                                 wire:click.prevent="markNotificationAsRead('{{ $notification->id }}')"
                                 x-on:click.stop>
-                                <div class="fw-semibold">{{ $notification->data['sender_name'] }}</div>
-                                <div class="text-muted text-truncate" title="{{ $notification->data['message'] }}">
-                                    {{ \Illuminate\Support\Str::limit($notification->data['message'], 50) }}
+                                <div style="max-width: 80%;">
+                                    <div class="fw-semibold mb-1">
+                                        {{ $notification->data['sender_name'] ?? 'Unknown' }}
+                                    </div>
+
+                                    <div class="text-muted text-truncate small"
+                                        title="{{ $notification->data['message'] ?? 'File Received' }}">
+                                        {{ \Illuminate\Support\Str::limit($notification->data['message'] ?: '📎 File Received', 30) }}
+                                    </div>
                                 </div>
-                                <small class="text-muted">
+
+                                <small class="text-muted text-nowrap">
                                     {{ \Carbon\Carbon::parse($notification->created_at)->diffForHumans() }}
                                 </small>
                             </li>
@@ -199,6 +207,56 @@
                             <li class="px-3 py-2 text-muted text-center">No new notifications</li>
                         @endforelse
                     </ul>
+                </div> --}}
+
+                <div class="relative me-2" x-data="{ open: false }">
+                    <button class="btn btn-outline-secondary btn-sm position-relative" @click="open = !open"
+                        @click.outside="open = false">
+                        <i class="fa fa-bell"></i>
+
+                        @if ($unreadCount)
+                            <span
+                                class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                                {{ $unreadCount }}
+                            </span>
+                        @endif
+                    </button>
+
+                    <div x-show="open" x-cloak x-transition
+                        class="absolute end-0 mt-2 z-50 bg-white shadow rounded border"
+                        style="width: 300px; max-height: 300px; overflow-y: auto;">
+                        @if ($unreadCount)
+                            <div class="d-flex justify-content-between align-items-center px-3 py-2 border-bottom">
+                                <span class="fw-semibold">Notifications</span>
+                                <button wire:click.prevent="markAllNotificationsAsRead"
+                                    class="btn btn-link btn-sm p-0 text-primary" x-on:click.stop>
+                                    Mark all as read
+                                </button>
+                            </div>
+                        @endif
+
+                        @forelse($notifications as $notification)
+                            <div class="px-3 py-2 border-bottom small d-flex justify-content-between align-items-start gap-2"
+                                style="cursor: pointer;"
+                                wire:click.prevent="markNotificationAsRead('{{ $notification->id }}')"
+                                x-on:click.stop>
+                                <div style="max-width: 80%;">
+                                    <div class="fw-semibold mb-1">
+                                        {{ $notification->data['sender_name'] ?? 'Unknown' }}
+                                    </div>
+                                    <div class="text-muted text-truncate small"
+                                        title="{{ $notification->data['message'] ?? '📎 File Received' }}">
+                                        {{ \Illuminate\Support\Str::limit($notification->data['message'] ?: '📎 File Received', 30) }}
+                                    </div>
+                                </div>
+                                <small class="text-muted text-nowrap">
+                                    {{ \Carbon\Carbon::parse($notification->created_at)->diffForHumans() }}
+                                </small>
+                            </div>
+                        @empty
+                            <div class="px-3 py-2 text-muted text-center">No new notifications</div>
+                        @endforelse
+                    </div>
                 </div>
 
 
@@ -233,7 +291,7 @@
 
         <!-- Scrollable Messages -->
         <div id="chat-box" class="overflow-auto flex-grow-1 border-bottom p-3"
-            wire:poll.keep-alive.5000ms="pollNewMessages" x-data="{ previousScrollHeight: 0, loading: false }"
+            wire:poll.keep-alive.6000ms="pollNewMessages" x-data="{ previousScrollHeight: 0, loading: false }"
             x-on:scroll.passive="
         if ($el.scrollTop < 50 && @this.hasMoreMessages && !loading) {
             loading = true;
