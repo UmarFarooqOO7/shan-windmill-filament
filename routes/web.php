@@ -7,7 +7,16 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log; // Keep for logging potential errors
 use App\Http\Controllers\InvoiceController;
 use App\Livewire\ChatPanel;
+use Illuminate\Support\Facades\Artisan;
 
+Route::get('/cc', function () {
+    Artisan::call('route:clear');
+    Artisan::call('config:clear');
+    Artisan::call('view:clear');
+    Artisan::call('cache:clear');
+    // Artisan::call('storage:link');
+    return "Cache cleared!";
+})->name('clear.cache');
 /*
 |--------------------------------------------------------------------------|
 | This file is part of the "web" middleware group. Make something great!   |

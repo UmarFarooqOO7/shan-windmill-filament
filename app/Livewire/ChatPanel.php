@@ -43,11 +43,11 @@ class ChatPanel extends Component
     {
         $user = auth()->user();
 
-        $this->notifications = $user->unreadNotifications()->latest()->limit(5)->get();
+        $this->notifications = $user->unreadNotifications()->latest()->whereNotNull('data->chat_type')->limit(5)->get();
 
-        $this->unreadCount = $this->selectedChat
-            ? $user->unreadNotifications->where('data.chat_id', $this->selectedChat->id)->count()
-            : $user->unreadNotifications()->count();
+        $this->unreadCount = 
+        // $this->selectedChat ? $user->unreadNotifications->where('data.chat_id', $this->selectedChat->id)->count()
+             $user->unreadNotifications()->whereNotNull('data->chat_type')->count();
     }
 
     public function markAllNotificationsAsRead()
@@ -134,7 +134,6 @@ class ChatPanel extends Component
         $this->selectedChat = Chat::firstOrCreate([
             'team_id' => $teamId,
         ]);
-
         // ✅ Mark related notifications as read
         auth()->user()
             ->unreadNotifications()
@@ -347,6 +346,7 @@ class ChatPanel extends Component
         $this->messages->push($message->load('user'));
         // Dispatch scroll event
         $this->dispatch('scrollToBottom');
+
     }
 
     public function markChatNotificationsAsRead()
