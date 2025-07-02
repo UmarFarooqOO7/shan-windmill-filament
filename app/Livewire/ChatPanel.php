@@ -39,21 +39,21 @@ class ChatPanel extends Component
     public $notifications = [];
     public $unreadCount = 0;
 
-    public function loadNotifications()
+    public function loadUnreadNotifications()
     {
         $user = auth()->user();
 
         $this->notifications = $user->unreadNotifications()->latest()->whereNotNull('data->chat_type')->limit(5)->get();
 
-        $this->unreadCount = 
-        // $this->selectedChat ? $user->unreadNotifications->where('data.chat_id', $this->selectedChat->id)->count()
-             $user->unreadNotifications()->whereNotNull('data->chat_type')->count();
+        $this->unreadCount =
+            // $this->selectedChat ? $user->unreadNotifications->where('data.chat_id', $this->selectedChat->id)->count()
+            $user->unreadNotifications()->whereNotNull('data->chat_type')->count();
     }
 
     public function markAllNotificationsAsRead()
     {
         auth()->user()->unreadNotifications->markAsRead();
-        $this->loadNotifications();
+        $this->loadUnreadNotifications();
     }
 
     public function markNotificationAsRead($id)
@@ -64,7 +64,7 @@ class ChatPanel extends Component
             $notification->markAsRead();
         }
 
-        $this->loadNotifications();
+        $this->loadUnreadNotifications();
     }
 
     // modal open and users show with search
@@ -116,11 +116,6 @@ class ChatPanel extends Component
 
         $this->selectedChat = $chat;
 
-        // ✅ Mark related notifications as read
-        auth()->user()
-            ->unreadNotifications()
-            ->where('data->chat_id', $this->selectedChat->id)
-            ->update(['read_at' => now()]);
 
         $this->page = 1;
         $this->perPage = 10;
@@ -134,16 +129,22 @@ class ChatPanel extends Component
         $this->selectedChat = Chat::firstOrCreate([
             'team_id' => $teamId,
         ]);
-        // ✅ Mark related notifications as read
-        auth()->user()
-            ->unreadNotifications()
-            ->where('data->chat_id', $this->selectedChat->id)
-            ->update(['read_at' => now()]);
 
         $this->selectedUser = null;
         $this->page = 1;
         $this->loadMessages();
         $this->dispatch('scrollToBottom');
+    }
+
+    public function chatNotificationsRead()
+    {
+        if($this->selectedChat){
+            // ✅ Mark related notifications as read
+            auth()->user()
+                ->unreadNotifications()
+                ->where('data->chat_id', $this->selectedChat->id)
+                ->update(['read_at' => now()]);
+        }
     }
 
     #[Computed]
@@ -346,7 +347,6 @@ class ChatPanel extends Component
         $this->messages->push($message->load('user'));
         // Dispatch scroll event
         $this->dispatch('scrollToBottom');
-
     }
 
     public function markChatNotificationsAsRead()
@@ -401,7 +401,8 @@ class ChatPanel extends Component
 
     public function render()
     {
-        $this->loadNotifications();
+        $this->chatNotificationsRead();
+        $this->loadUnreadNotifications();
         return view('livewire.chat-panel');
     }
 }

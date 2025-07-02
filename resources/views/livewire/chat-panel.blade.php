@@ -4,7 +4,7 @@
 
             {{-- Go to Dashboard Button --}}
             <div class="mx-3 d-flex justify-content-between align-items-center">
-                <a href="{{ url('/admin') }}" class="btn btn-sm btn-outline-success-app w-100">
+                <a href="{{ url('/admin') }}" class="btn btn-sm btn-outline-success-app w-100 py-2">
                     <i class="fa fa-arrow-left me-1"></i> Dashboard
                 </a>
             </div>
@@ -23,14 +23,14 @@
             {{-- Tabs --}}
             <div class="d-flex">
                 <button
-                    class="btn w-50 rounded-0 {{ $activeTab === 'teams' ? 'btn-outline-success-app border border-light' : '' }}"
+                    class="btn w-50 rounded-0 {{ $activeTab === 'teams' ? 'btn-outline-success-app' : '' }}"
                     wire:click="$set('activeTab', 'teams')">
-                    Teams
+                    <i class="fa fa-users text-success"></i> Teams
                 </button>
                 <button
-                    class="btn w-50 rounded-0 {{ $activeTab === 'users' ? 'btn-outline-success-app border border-light' : '' }}"
+                    class="btn w-50 rounded-0 {{ $activeTab === 'users' ? 'btn-outline-success-app' : '' }}"
                     wire:click="$set('activeTab', 'users')">
-                    Users
+                     <i class="fa fa-user text-success"></i> Users
                 </button>
             </div>
 
@@ -39,8 +39,8 @@
                 @if ($activeTab === 'users')
                     @forelse($this->users as $user)
                         <div wire:click="selectUser({{ $user->id }})"
-                            class="user-container d-flex align-items-center justify-content-between px-3 py-2 border-bottom {{ $selectedUser && $selectedUser->id === $user->id ? 'bg-default-app' : 'bg-light' }}"
-                            style="cursor: pointer;">
+                            class="user-container d-flex align-items-center justify-content-between px-3 py-2 border-bottom {{ $selectedUser && $selectedUser->id === $user->id ? 'bg-default-app' : '' }}"
+                            style="cursor: pointer; border-top: 1px solid #059669">
                             <div class="d-flex align-items-center gap-2">
                                 <img src="{{ 'https://ui-avatars.com/api/?name=' . urlencode($user->name) }}"
                                     class="rounded-circle" width="40" height="40">
@@ -57,10 +57,10 @@
                 @else
                     @forelse($this->teams as $team)
                         <div wire:click="openTeamChat({{ $team->id }})"
-                            class="user-container d-flex align-items-center justify-content-between px-3 py-2 border-bottom {{ $selectedChat && $selectedChat->team_id === $team->id ? 'bg-default-app' : 'bg-light' }}"
-                            style="cursor: pointer;">
+                            class="user-container d-flex align-items-center justify-content-between px-3 py-2 border-bottom {{ $selectedChat && $selectedChat->team_id === $team->id ? 'bg-default-app' : '' }}"
+                            style="cursor: pointer; border-top: 1px solid #059669">
                             <div class="d-flex align-items-center gap-2">
-                                <i class="fa fa-users text-success"></i>
+                                
                                 <div class="fw-semibold">{{ $team->name }}</div>
                             </div>
 
@@ -237,7 +237,7 @@
 
         <!-- Scrollable Messages -->
         <div id="chat-box" class="overflow-auto flex-grow-1 border-bottom p-3"
-            wire:poll.keep-alive.10s="pollNewMessages" x-data="{ previousScrollHeight: 0, loading: false }"
+            wire:poll.keep-alive.60s="pollNewMessages" x-data="{ previousScrollHeight: 0, loading: false }"
             x-on:scroll.passive="
         if ($el.scrollTop < 50 && @this.hasMoreMessages && !loading) {
             loading = true;
