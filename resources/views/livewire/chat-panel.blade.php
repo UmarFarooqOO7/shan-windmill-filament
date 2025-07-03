@@ -479,7 +479,8 @@
     </div>
 
     <audio id="sendSound" src="{{ asset('sounds/send-aud.mp3') }}"></audio>
-    <audio id="receiveSound" src="{{ asset('sounds/rec-aud.mp3') }}"></audio>
+    <audio id="deleteSound" src="{{ asset('sounds/delete-aud.mp3') }}"></audio>
+    <audio id="recSound" src="{{ asset('sounds/rec-audio.mp3') }}"></audio>
 </div>
 
 @push('scripts')
@@ -496,6 +497,12 @@
             Livewire.on('scrollToBottom', () => {
                 setTimeout(() => {
                     scrollToBottom();
+                }, 10);
+            });
+
+            Livewire.on('playSendTune', () => {
+                setTimeout(() => {
+                    scrollToBottom();
 
                     // 🔊 Play send sound as part of scroll (sender only)
                     const snd = document.getElementById('sendSound');
@@ -503,13 +510,18 @@
 
                 }, 10); // Small delay ensures DOM updates are rendered
             });
-        });
 
-        // document.addEventListener('livewire:initialized', () => {
-        //     Livewire.on('playReceiveSound', () => {
-        //         const sound = document.getElementById('receiveSound');
-        //         if (sound) sound.play();
-        //     });
-        // });
+            Livewire.on('playDeleteTune', () => {
+                // 🔊 Play send sound as part of scroll (sender only)
+                const del = document.getElementById('deleteSound');
+                if (del) del.play();
+            });
+
+             Livewire.on('new-message-received', () => {
+                // 🔊 Play send sound as part of scroll (sender only)
+                const rec = document.getElementById('recSound');
+                if (rec) rec.play();
+            });
+        });
     </script>
 @endpush

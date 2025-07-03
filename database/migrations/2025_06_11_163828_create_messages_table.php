@@ -19,6 +19,7 @@ return new class extends Migration
             $table->json('deleted_by')->nullable();
             $table->json('attachments')->nullable(); 
             $table->boolean('is_read')->default(false);
+            $table->boolean('is_tune_rec')->default(false);
             $table->timestamps();
         });
     }

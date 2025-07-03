@@ -138,7 +138,7 @@ class ChatPanel extends Component
 
     public function chatNotificationsRead()
     {
-        if($this->selectedChat){
+        if ($this->selectedChat) {
             // ✅ Mark related notifications as read
             auth()->user()
                 ->unreadNotifications()
@@ -277,13 +277,28 @@ class ChatPanel extends Component
         }
     }
 
+    public function checkAndPlayNewMessageTone()
+    {
+        // Get latest message in this chat not sent by current user
+        $latest = Message::where('user_id', '!=', auth()->id())
+            ->latest()
+            ->first();
+
+        if ($latest && !$latest->is_tune_rec) {
+            // 🔔 Trigger frontend audio
+            $this->dispatch('new-message-received');
+
+            // ✅ Set flag so next time it doesn't play again
+            $latest->update(['is_tune_rec' => true]);
+        }
+    }
+
+
     public function pollNewMessages()
     {
-
         if (!$this->selectedChat) return;
         $this->loadMessages('poll');
     }
-
 
     public function loadMoreMessages()
     {
@@ -346,7 +361,7 @@ class ChatPanel extends Component
         // Append new message manually (no need to reload all)
         $this->messages->push($message->load('user'));
         // Dispatch scroll event
-        $this->dispatch('scrollToBottom');
+        $this->dispatch('playSendTune');
     }
 
     public function markChatNotificationsAsRead()
@@ -381,6 +396,7 @@ class ChatPanel extends Component
 
             $message->delete();
             $this->loadMessages(); // Refresh messages after deletion
+            $this->dispatch('playDeleteTune');
         }
     }
 
@@ -397,12 +413,15 @@ class ChatPanel extends Component
 
         $this->selectedChat = null;
         $this->selectedUser = null;
+        $this->dispatch('playDeleteTune');
     }
 
     public function render()
     {
         $this->chatNotificationsRead();
         $this->loadUnreadNotifications();
+        // 🔔 Play tone if latest received message has not played
+        $this->checkAndPlayNewMessageTone();
         return view('livewire.chat-panel');
     }
 }
