@@ -22,15 +22,13 @@
 
             {{-- Tabs --}}
             <div class="d-flex">
-                <button
-                    class="btn w-50 rounded-0 {{ $activeTab === 'teams' ? 'btn-outline-success-app' : '' }}"
+                <button class="btn w-50 rounded-0 {{ $activeTab === 'teams' ? 'btn-outline-success-app' : '' }}"
                     wire:click="$set('activeTab', 'teams')">
                     <i class="fa fa-users text-success"></i> Teams
                 </button>
-                <button
-                    class="btn w-50 rounded-0 {{ $activeTab === 'users' ? 'btn-outline-success-app' : '' }}"
+                <button class="btn w-50 rounded-0 {{ $activeTab === 'users' ? 'btn-outline-success-app' : '' }}"
                     wire:click="$set('activeTab', 'users')">
-                     <i class="fa fa-user text-success"></i> Users
+                    <i class="fa fa-user text-success"></i> Users
                 </button>
             </div>
 
@@ -60,7 +58,7 @@
                             class="user-container d-flex align-items-center justify-content-between px-3 py-2 border-bottom {{ $selectedChat && $selectedChat->team_id === $team->id ? 'bg-default-app' : '' }}"
                             style="cursor: pointer; border-top: 1px solid #059669">
                             <div class="d-flex align-items-center gap-2">
-                                
+
                                 <div class="fw-semibold">{{ $team->name }}</div>
                             </div>
 
@@ -156,6 +154,10 @@
                     </div>
 
                 @endif
+            </div>
+
+            <!-- Delete Chat -->
+            <div class="d-flex align-items-center gap-2">
 
                 <div class="relative me-2" x-data="{ open: false }">
                     <button class="btn btn-outline-secondary btn-sm position-relative" @click="open = !open"
@@ -206,38 +208,37 @@
                         @endforelse
                     </div>
                 </div>
-            </div>
 
-            <!-- Delete Chat -->
-            @if ($selectedChat)
-                @if ($messages->isNotEmpty())
-                    <div>
-                        <a href="#" class="btn btn-outline-danger btn-sm"
-                            x-on:click.prevent="
-                        Swal.fire({
-                            title: 'Are you sure?',
-                            text: 'This will permanently delete this chat!',
-                            icon: 'warning',
-                            showCancelButton: true,
-                            confirmButtonColor: '#d33',
-                            cancelButtonColor: '#3085d6',
-                            confirmButtonText: 'Yes, delete it!'
-                        }).then((result) => {
-                            if (result.isConfirmed) {
-                                @this.call('deleteChat');
-                            }
-                        });
-                ">
-                            Delete Chat
-                        </a>
-                    </div>
+                @if ($selectedChat)
+                    @if ($messages->isNotEmpty())
+                        <div>
+                            <a href="#" class="btn btn-outline-danger btn-sm"
+                                x-on:click.prevent="
+                            Swal.fire({
+                                title: 'Are you sure?',
+                                text: 'This will permanently delete this chat!',
+                                icon: 'warning',
+                                showCancelButton: true,
+                                confirmButtonColor: '#d33',
+                                cancelButtonColor: '#3085d6',
+                                confirmButtonText: 'Yes, delete it!'
+                            }).then((result) => {
+                                if (result.isConfirmed) {
+                                    @this.call('deleteChat');
+                                }
+                            });
+                    ">
+                                Delete Chat
+                            </a>
+                        </div>
+                    @endif
                 @endif
-            @endif
+            </div>
         </div>
 
         <!-- Scrollable Messages -->
         <div id="chat-box" class="overflow-auto flex-grow-1 border-bottom p-3"
-            wire:poll.keep-alive.60s="pollNewMessages" x-data="{ previousScrollHeight: 0, loading: false }"
+            wire:poll.keep-alive.10s="pollNewMessages" x-data="{ previousScrollHeight: 0, loading: false }"
             x-on:scroll.passive="
         if ($el.scrollTop < 50 && @this.hasMoreMessages && !loading) {
             loading = true;
@@ -517,7 +518,7 @@
                 if (del) del.play();
             });
 
-             Livewire.on('new-message-received', () => {
+            Livewire.on('new-message-received', () => {
                 // 🔊 Play send sound as part of scroll (sender only)
                 const rec = document.getElementById('recSound');
                 if (rec) rec.play();

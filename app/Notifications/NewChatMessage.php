@@ -9,9 +9,9 @@ use Illuminate\Notifications\Messages\DatabaseMessage;
 use App\Models\Message;
 use App\Models\User;
 
-class NewChatMessage extends Notification implements ShouldQueue
+class NewChatMessage extends Notification
 {
-    use Queueable;
+    // use Queueable;
 
     protected Message $message;
     protected User $sender;

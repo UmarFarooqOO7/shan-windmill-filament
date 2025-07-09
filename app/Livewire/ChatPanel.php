@@ -61,11 +61,25 @@ class ChatPanel extends Component
         $notification = auth()->user()->unreadNotifications()->where('id', $id)->first();
 
         if ($notification) {
+            $data = $notification->data;
             $notification->markAsRead();
-        }
 
-        $this->loadUnreadNotifications();
+            // Auto-open chat on click
+            if (isset($data['chat_type']) && isset($data['chat_id'])) {
+                if ($data['chat_type'] === 'team') {
+                    $chat = Chat::find($data['chat_id']);
+                    if ($chat && $chat->team_id) {
+                        $this->openTeamChat($chat->team_id);
+                    }
+                } elseif ($data['chat_type'] === 'user' && isset($data['sender_id'])) {
+                    $this->selectUser($data['sender_id']);
+                }
+            }
+        }
+        // $this->loadUnreadNotifications();
+
     }
+
 
     // modal open and users show with search
 
