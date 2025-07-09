@@ -156,7 +156,7 @@
                 @endif
             </div>
 
-            <!-- Delete Chat -->
+            <!-- notifi + delete chat  -->
             <div class="d-flex align-items-center gap-2">
 
                 <div class="relative me-2" x-data="{ open: false }">
@@ -209,30 +209,49 @@
                     </div>
                 </div>
 
-                @if ($selectedChat)
-                    @if ($messages->isNotEmpty())
-                        <div>
-                            <a href="#" class="btn btn-outline-danger btn-sm"
-                                x-on:click.prevent="
-                            Swal.fire({
-                                title: 'Are you sure?',
-                                text: 'This will permanently delete this chat!',
-                                icon: 'warning',
-                                showCancelButton: true,
-                                confirmButtonColor: '#d33',
-                                cancelButtonColor: '#3085d6',
-                                confirmButtonText: 'Yes, delete it!'
-                            }).then((result) => {
-                                if (result.isConfirmed) {
-                                    @this.call('deleteChat');
-                                }
-                            });
-                    ">
-                                Delete Chat
+                @if ($selectedChat && $messages->isNotEmpty())
+                    <div x-data="{ open: false }" class="position-relative me-3">
+                        <!-- Three Dots Button -->
+                        <button class="btn btn-sm btn-outline-secondary" @click="open = !open"
+                            @click.outside="open = false">
+                            <i class="fa fa-ellipsis-v"></i>
+                        </button>
+
+                        <!-- Dropdown -->
+                        <div x-show="open" x-cloak x-transition
+                            class="dropdown-menu dropdown-menu-end show shadow position-absolute"
+                            style="top: 100%; right: 0; z-index: 1000; display: block; min-width: 180px;">
+
+                            @if ($selectedChat->team_id)
+                                <a href="{{ url('admin/teams/' . $selectedChat->team_id) }}"
+                                    class="dropdown-item">
+                                    <i class="fa fa-eye me-1 text-primary"></i> View Team
+                                </a>
+                            @endif
+
+                            <a href="#" class="dropdown-item text-danger"
+                                @click.prevent="
+                    Swal.fire({
+                        title: 'Are you sure?',
+                        text: 'This will permanently delete this chat!',
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonColor: '#d33',
+                        cancelButtonColor: '#3085d6',
+                        confirmButtonText: 'Yes, delete it!'
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            @this.call('deleteChat');
+                            open = false;
+                        }
+                    });
+                ">
+                                <i class="fa fa-trash me-1"></i> Delete Chat
                             </a>
                         </div>
-                    @endif
+                    </div>
                 @endif
+
             </div>
         </div>
 
