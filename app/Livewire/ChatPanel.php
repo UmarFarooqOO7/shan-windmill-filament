@@ -310,6 +310,8 @@ class ChatPanel extends Component
 
     public function pollNewMessages()
     {
+        auth()->user()->update(['last_seen_at' => now()]);
+        
         if (!$this->selectedChat) return;
         $this->loadMessages('poll');
     }
@@ -409,7 +411,8 @@ class ChatPanel extends Component
             }
 
             $message->delete();
-            $this->loadMessages(); // Refresh messages after deletion
+            $this->messages = $this->messages->filter(fn ($msg) => $msg->id !== $id);
+            // $this->loadMessages(); // Refresh messages after deletion
             $this->dispatch('playDeleteTune');
         }
     }

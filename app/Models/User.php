@@ -28,6 +28,7 @@ class User extends Authenticatable implements FilamentUser
         'is_admin',
         'google_access_token',
         'google_refresh_token',
+        'last_seen_at',
         'google_token_expires_at',
     ];
 
@@ -53,8 +54,17 @@ class User extends Authenticatable implements FilamentUser
             'password' => 'hashed',
             'is_admin' => 'boolean',
             'google_token_expires_at' => 'datetime',
+            'last_seen_at' => 'datetime', 
         ];
     }
+
+   public function getIsOnlineAttribute(): bool
+    {
+        return $this->last_seen_at && $this->last_seen_at->gt(now()->subSeconds(10)); // More precise check
+    }
+
+
+
 
     /**
      * Get the teams that the user belongs to.
@@ -63,6 +73,7 @@ class User extends Authenticatable implements FilamentUser
     {
         return $this->belongsToMany(Team::class, 'team_members');
     }
+    
 
     public function canAccessPanel(Panel $panel): bool
     {

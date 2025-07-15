@@ -28,7 +28,7 @@
                 </button>
                 <button class="btn w-50 rounded-0 {{ $activeTab === 'users' ? 'btn-outline-success-app' : '' }}"
                     wire:click="$set('activeTab', 'users')">
-                    <i class="fa fa-user text-success"></i> Users
+                    <i class="fa fa-user text-success"></i> Chats
                 </button>
             </div>
 
@@ -39,9 +39,19 @@
                         <div wire:click="selectUser({{ $user->id }})"
                             class="user-container d-flex align-items-center justify-content-between px-3 py-2 border-bottom {{ $selectedUser && $selectedUser->id === $user->id ? 'bg-default-app' : '' }}"
                             style="cursor: pointer; border-top: 1px solid #059669">
+
                             <div class="d-flex align-items-center gap-2">
-                                <img src="{{ 'https://ui-avatars.com/api/?name=' . urlencode($user->name) }}"
-                                    class="rounded-circle" width="40" height="40">
+                                <div class="position-relative">
+                                    <img src="{{ 'https://ui-avatars.com/api/?name=' . urlencode($user->name) }}"
+                                        class="rounded-circle" width="40" height="40">
+
+                                    {{-- Status Dot --}}
+                                    <span
+                                        class="position-absolute bottom-0 end-0 translate-middle p-1 border border-white rounded-circle"
+                                        style="background-color: {{ $user->is_online ? '#16a34a' : '#f97316' }}; width: 10px; height: 10px;">
+                                    </span>
+                                </div>
+
                                 <div class="fw-semibold">{{ $user->name }}</div>
                             </div>
 
@@ -49,6 +59,7 @@
                                 <span class="badge bg-danger rounded-pill">{{ $user->unread_count }}</span>
                             @endif
                         </div>
+
                     @empty
                         <div class="text-muted text-center p-3">No users found.</div>
                     @endforelse
@@ -140,20 +151,28 @@
 
             {{-- chat user/team name + notifications --}}
             <div class="d-flex align-items-center gap-2">
-                @if ($selectedChat)
-                    <!-- Left: Avatar + Name (User or Team) -->
-                    <div class="d-flex align-items-center gap-2">
-                        @if ($selectedChat->team_id)
-                            <i class="fa fa-users text-success fs-4"></i>
-                            <div class="fw-semibold">{{ $selectedChat->team->name }}</div>
-                        @elseif (isset($selectedUser))
-                            <img src="{{ 'https://ui-avatars.com/api/?name=' . urlencode($selectedUser->name) }}"
-                                alt="Avatar" class="rounded-circle" width="40" height="40">
-                            <div class="fw-semibold">{{ $selectedUser->name }}</div>
-                        @endif
-                    </div>
-
-                @endif
+               @if ($selectedChat)
+    <!-- Left: Avatar + Name (User or Team) -->
+    <div class="d-flex align-items-center gap-2">
+        @if ($selectedChat->team_id)
+            <i class="fa fa-users text-success fs-4"></i>
+            <div class="fw-semibold">{{ $selectedChat->team->name }}</div>
+        @elseif (isset($selectedUser))
+            <img src="{{ 'https://ui-avatars.com/api/?name=' . urlencode($selectedUser->name) }}"
+                alt="Avatar" class="rounded-circle" width="40" height="40">
+            <div>
+                <div class="fw-semibold">{{ $selectedUser->name }}</div>
+                <div class="d-flex align-items-center gap-1">
+                    <span class="rounded-circle"
+                        style="width: 8px; height: 8px; background-color: {{ $selectedUser->is_online ? '#22c55e' : '#f97316' }};"></span>
+                    <small class="text-muted">
+                        {{ $selectedUser->is_online ? 'Online' : 'Offline' }}
+                    </small>
+                </div>
+            </div>
+        @endif
+    </div>
+@endif
             </div>
 
             <!-- notifi + delete chat  -->
@@ -378,13 +397,32 @@
 
 
                                 {{-- Delete Button --}}
-                                @if ($isMine)
-                                    <button wire:click="deleteMessage({{ $msg->id }})"
+                                 @if ($isMine)
+                                    <button
+                                        x-data
+                                        @click.prevent="
+                                            Swal.fire({
+                                                title: 'Are you sure?',
+                                                text: 'You will not be able to recover this message!',
+                                                icon: 'warning',
+                                                showCancelButton: true,
+                                                confirmButtonColor: '#d33',
+                                                cancelButtonColor: '#3085d6',
+                                                confirmButtonText: 'Yes, delete it!'
+                                            }).then((result) => {
+                                                if (result.isConfirmed) {
+                                                    @this.call('deleteMessage', {{ $msg->id }});
+                                                }
+                                            });
+                                        "
                                         class="btn btn-sm btn-danger btn-circle delete-btn position-absolute top-0 end-0 mt-1 me-1 d-none"
-                                        style="padding: 2px 6px; font-size: 10px;" title="Delete">
+                                        style="padding: 2px 6px; font-size: 10px;" title="Delete"
+                                    >
                                         ×
                                     </button>
                                 @endif
+
+
                             </div>
                         </div>
 
