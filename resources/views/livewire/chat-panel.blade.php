@@ -345,6 +345,7 @@
 
                         {{-- Message Bubble --}}
                         <div
+                            wire:key="msg-{{ $msg->id }}"
                             class="d-flex mb-2 {{ $msg->user_id === auth()->id() ? 'justify-content-end' : 'justify-content-start' }}">
                             <div class="position-relative px-3 py-2 rounded"
                                 style="max-width: 70%; background-color: {{ $msg->user_id === auth()->id() ? '#dcf8c6' : '#f1f0f0' }};"
@@ -407,7 +408,27 @@
                                                         class="btn btn-sm btn-outline-success-app mt-1">Open</a>
                                                 </div>
                                             </div>
-                                        @else
+
+                                        @elseif($extension === 'mp3')
+    <div x-data="audioPlayer('{{ $fileUrl }}')" class="d-flex align-items-center gap-2 p-2 bg-white rounded shadow-sm" style="width: 250px;">
+        <button @click="toggle()" class="btn btn-sm btn-outline-primary rounded-circle" style="width: 32px; height: 32px;">
+            <i :class="playing ? 'fa-pause' : 'fa-play'" class="fa-solid"></i>
+        </button>
+
+        <div class="flex-grow-1">
+            <div class="progress mb-1" style="height: 4px;">
+                <div class="progress-bar bg-success" role="progressbar" :style="{ width: progress + '%' }"></div>
+            </div>
+            <div class="d-flex justify-content-between small text-muted" style="font-size: 10px;">
+                <span x-text="currentTimeDisplay">0:00</span>
+                <span x-text="durationDisplay">0:00</span>
+            </div>
+        </div>
+
+        <audio x-ref="audio" :src="src" preload="metadata"></audio>
+    </div>
+
+    @else
                                             <div class="d-flex align-items-center gap-2">
                                                 <i class="fa-solid fa-file text-secondary fs-3"></i>
                                                 <div>
@@ -585,7 +606,66 @@
 </div>
 
 @push('scripts')
-    <script>
+        <script>
+    function audioPlayer(src) {
+        return {
+            src,
+            playing: false,
+            progress: 0,
+            currentTimeDisplay: '0:00',
+            durationDisplay: '0:00',
+
+            toggle() {
+                const audio = this.$refs.audio;
+
+                // Pause all other players
+                document.querySelectorAll('audio').forEach(el => {
+                    if (el !== audio) {
+                        el.pause();
+                        el.currentTime = 0;
+
+                        // update play button icons manually
+                        const wrapper = el.closest('[x-data]');
+                        if (wrapper && wrapper.__x) {
+                            wrapper.__x.$data.playing = false;
+                            wrapper.__x.$data.progress = 0;
+                            wrapper.__x.$data.currentTimeDisplay = '0:00';
+                        }
+                    }
+                });
+
+                if (audio.paused) {
+                    audio.play();
+                    this.playing = true;
+                } else {
+                    audio.pause();
+                    this.playing = false;
+                }
+
+                audio.ontimeupdate = () => {
+                    this.progress = (audio.currentTime / audio.duration) * 100;
+                    this.currentTimeDisplay = this.formatTime(audio.currentTime);
+                };
+
+                audio.onloadedmetadata = () => {
+                    this.durationDisplay = this.formatTime(audio.duration);
+                };
+
+                audio.onended = () => {
+                    this.playing = false;
+                    this.progress = 0;
+                    this.currentTimeDisplay = '0:00';
+                };
+            },
+
+            formatTime(seconds) {
+                const m = Math.floor(seconds / 60);
+                const s = Math.floor(seconds % 60);
+                return `${m}:${s < 10 ? '0' : ''}${s}`;
+            }
+        };
+    }
+
         function scrollToBottom() {
             const chatBox = document.getElementById('chat-box');
             if (chatBox) {
