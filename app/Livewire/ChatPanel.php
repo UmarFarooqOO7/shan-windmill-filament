@@ -182,6 +182,12 @@ class ChatPanel extends Component
                         ->whereHas('chat.users', fn($q) => $q->where('users.id', $authId));
                 }
             ])
+            ->with([
+                'receivedMessages' => function ($q) use ($authId) {
+                    $q->where('is_read', false)->latest()->take(1)
+                        ->whereHas('chat.users', fn($q) => $q->where('users.id', $authId));
+                }
+            ])
             ->orderByDesc('unread_count')
             ->orderBy('name')
             ->get();
@@ -214,6 +220,7 @@ class ChatPanel extends Component
         return Team::whereHas('members', fn($q) => $q->where('users.id', $authId))
             ->when($this->search, fn($q) => $q->where('name', 'like', '%' . $this->search . '%'))
             ->whereHas('messages') // ✅ this now works!
+            ->with(['messages' => fn($q) => $q->latest()->take(1)])
             ->withCount([
                 'messages as unread_count' => function ($q) use ($authId) {
                     $q->where('user_id', '!=', $authId)
@@ -227,6 +234,7 @@ class ChatPanel extends Component
                         });
                 }
             ])
+            ->with('latestMessage.user')
             ->get();
     }
 

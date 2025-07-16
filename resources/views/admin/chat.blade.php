@@ -32,12 +32,12 @@
 
 
         @media (min-width: 768px) {
-            .col-md-3 {
+            /* .col-md-3 {
                 width: 20% !important;
             }
              .col-md-9 {
                 width: 80% !important;
-            }
+            } */
         }
 
         @media (max-width: 768px) {

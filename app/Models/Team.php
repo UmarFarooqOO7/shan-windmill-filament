@@ -52,4 +52,19 @@ class Team extends Model
             'id'          // Local key on Chat
         );
     }
+
+    // Team.php
+
+public function latestMessage()
+{
+    return $this->hasOneThrough(
+        \App\Models\Message::class,
+        \App\Models\Chat::class,
+        'team_id',     // Foreign key on Chat table
+        'chat_id',     // Foreign key on Message table
+        'id',          // Local key on Team
+        'id'           // Local key on Chat
+    )->latestOfMany();
+}
+
 }

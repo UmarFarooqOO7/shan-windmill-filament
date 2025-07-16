@@ -35,51 +35,94 @@
             {{-- User / Team List --}}
             <div class="flex-grow-1 overflow-y-auto">
                 @if ($activeTab === 'users')
-                    @forelse($this->users as $user)
-                        <div wire:click="selectUser({{ $user->id }})"
-                            class="user-container d-flex align-items-center justify-content-between px-3 py-2 border-bottom {{ $selectedUser && $selectedUser->id === $user->id ? 'bg-default-app' : '' }}"
-                            style="cursor: pointer; border-top: 1px solid #059669">
+    @forelse($this->users as $user)
+        <div wire:click="selectUser({{ $user->id }})"
+            class="user-container d-flex align-items-center justify-content-between px-3 py-2 border-bottom {{ $selectedUser && $selectedUser->id === $user->id ? 'bg-default-app' : '' }}"
+            style="cursor: pointer; border-top: 1px solid #059669">
 
-                            <div class="d-flex align-items-center gap-2">
-                                <div class="position-relative">
-                                    <img src="{{ 'https://ui-avatars.com/api/?name=' . urlencode($user->name) }}"
-                                        class="rounded-circle" width="40" height="40">
+            {{-- Left: Avatar + Name + Message Preview --}}
+            <div class="d-flex align-items-center gap-3" style="width: 80%;">
+                {{-- Avatar + Online Dot --}}
+                <div class="position-relative">
+                    <img src="{{ 'https://ui-avatars.com/api/?name=' . urlencode($user->name) }}"
+                        class="rounded-circle" width="45" height="45">
+                    <span
+                        class="position-absolute bottom-0 end-0 translate-middle p-1 border border-white rounded-circle"
+                        style="background-color: {{ $user->is_online ? '#16a34a' : '#f97316' }}; width: 10px; height: 10px;">
+                    </span>
+                </div>
 
-                                    {{-- Status Dot --}}
-                                    <span
-                                        class="position-absolute bottom-0 end-0 translate-middle p-1 border border-white rounded-circle"
-                                        style="background-color: {{ $user->is_online ? '#16a34a' : '#f97316' }}; width: 10px; height: 10px;">
-                                    </span>
-                                </div>
+                {{-- Name + Latest Message --}}
+                <div class="d-flex flex-column">
+                    <div class="fw-semibold">{{ $user->name }}</div>
 
-                                <div class="fw-semibold">{{ $user->name }}</div>
-                            </div>
-
-                            @if ($user->unread_count > 0)
-                                <span class="badge bg-danger rounded-pill">{{ $user->unread_count }}</span>
-                            @endif
+                    @foreach($user->receivedMessages as $message)
+                        <div class="text-muted small text-truncate" style="max-width: 200px;">
+                            {{ \Illuminate\Support\Str::limit($message->message, 30) }}
                         </div>
+                    @endforeach
+                </div>
+            </div>
 
-                    @empty
-                        <div class="text-muted text-center p-3">No users found.</div>
-                    @endforelse
+            {{-- Right: Time + Unread Count --}}
+            <div class="text-end">
+                @if ($user->latestMessageWithAuth)
+                @endif
+                
+                @foreach($user->receivedMessages as $message)
+                    <div class="text-muted small">
+                        {{ $message->created_at->format('g:i a') }}
+                    </div>
+                @endforeach
+
+                @if ($user->unread_count > 0)
+                    <span class="badge bg-success rounded-pill">{{ $user->unread_count }}</span>
+                @endif
+            </div>
+        </div>
+    @empty
+        <div class="text-muted text-center p-3">No users found.</div>
+    @endforelse
                 @else
                     @forelse($this->teams as $team)
-                        <div wire:click="openTeamChat({{ $team->id }})"
-                            class="user-container d-flex align-items-center justify-content-between px-3 py-2 border-bottom {{ $selectedChat && $selectedChat->team_id === $team->id ? 'bg-default-app' : '' }}"
-                            style="cursor: pointer; border-top: 1px solid #059669">
-                            <div class="d-flex align-items-center gap-2">
+    <div wire:click="openTeamChat({{ $team->id }})"
+        class="user-container d-flex align-items-center justify-content-between px-3 py-2 border-bottom {{ $selectedChat && $selectedChat->team_id === $team->id ? 'bg-default-app' : '' }}"
+        style="cursor: pointer; border-top: 1px solid #059669">
 
-                                <div class="fw-semibold">{{ $team->name }}</div>
-                            </div>
+        <div class="d-flex flex-column gap-1" style="width: 80%;">
+            <div class="fw-semibold d-flex align-items-center gap-2">
+                <i class="fa fa-users text-success"></i> {{ $team->name }}
+            </div>
 
-                            @if ($team->unread_count > 0)
-                                <span class="badge bg-danger rounded-pill">{{ $team->unread_count }}</span>
-                            @endif
-                        </div>
-                    @empty
-                        <div class="text-muted text-center p-3">No teams found.</div>
-                    @endforelse
+            @if ($team->latestMessage)
+                <div class="text-muted small text-truncate" style="max-width: 200px;">
+                    @if ($team->latestMessage->user_id === auth()->id())
+                        You: 
+                    @else
+                        {{ $team->latestMessage->user->name }}: 
+                    @endif
+
+                    {{ \Illuminate\Support\Str::limit($team->latestMessage->message, 30) }}
+                </div>
+            @endif
+        </div>
+
+        <div class="text-end">
+            @if ($team->latestMessage)
+                <div class="text-muted small">
+                    {{ $team->latestMessage->created_at->format('g:i a') }}
+                </div>
+            @endif
+
+            @if ($team->unread_count > 0)
+                <span class="badge bg-danger rounded-pill">{{ $team->unread_count }}</span>
+            @endif
+        </div>
+    </div>
+@empty
+    <div class="text-muted text-center p-3">No teams found.</div>
+@endforelse
+
                 @endif
             </div>
 
