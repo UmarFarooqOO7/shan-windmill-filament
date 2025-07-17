@@ -67,11 +67,13 @@ class ChatPanel extends Component
             // Auto-open chat on click
             if (isset($data['chat_type']) && isset($data['chat_id'])) {
                 if ($data['chat_type'] === 'team') {
+                    $this->activeTab = "teams";
                     $chat = Chat::find($data['chat_id']);
                     if ($chat && $chat->team_id) {
                         $this->openTeamChat($chat->team_id);
                     }
                 } elseif ($data['chat_type'] === 'user' && isset($data['sender_id'])) {
+                    $this->activeTab = "users";
                     $this->selectUser($data['sender_id']);
                 }
             }

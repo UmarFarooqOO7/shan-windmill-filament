@@ -409,26 +409,26 @@
                                                 </div>
                                             </div>
 
-                                        @elseif($extension === 'mp3')
-    <div x-data="audioPlayer('{{ $fileUrl }}')" class="d-flex align-items-center gap-2 p-2 bg-white rounded shadow-sm" style="width: 250px;">
-        <button @click="toggle()" class="btn btn-sm btn-outline-primary rounded-circle" style="width: 32px; height: 32px;">
-            <i :class="playing ? 'fa-pause' : 'fa-play'" class="fa-solid"></i>
-        </button>
+                                        @elseif($extension === 'mp3' || $extension === 'm4a')
+                                            <div x-data="audioPlayer('{{ $fileUrl }}')" class="d-flex align-items-center gap-2 p-2 bg-white rounded shadow-sm" style="width: 250px;">
+                                                <button @click="toggle()" class="btn btn-sm btn-outline-primary rounded-circle" style="width: 32px; height: 32px;">
+                                                    <i :class="playing ? 'fa-pause' : 'fa-play'" class="fa-solid"></i>
+                                                </button>
 
-        <div class="flex-grow-1">
-            <div class="progress mb-1" style="height: 4px;">
-                <div class="progress-bar bg-success" role="progressbar" :style="{ width: progress + '%' }"></div>
-            </div>
-            <div class="d-flex justify-content-between small text-muted" style="font-size: 10px;">
-                <span x-text="currentTimeDisplay">0:00</span>
-                <span x-text="durationDisplay">0:00</span>
-            </div>
-        </div>
+                                                <div class="flex-grow-1">
+                                                    <div class="progress mb-1" style="height: 4px;">
+                                                        <div class="progress-bar bg-success" role="progressbar" :style="{ width: progress + '%' }"></div>
+                                                    </div>
+                                                    <div class="d-flex justify-content-between small text-muted" style="font-size: 10px;">
+                                                        <span x-text="currentTimeDisplay">0:00</span>
+                                                        <span x-text="durationDisplay">0:00</span>
+                                                    </div>
+                                                </div>
 
-        <audio x-ref="audio" :src="src" preload="metadata"></audio>
-    </div>
+                                                <audio x-ref="audio" :src="src" preload="metadata"></audio>
+                                            </div>
 
-    @else
+                                            @else
                                             <div class="d-flex align-items-center gap-2">
                                                 <i class="fa-solid fa-file text-secondary fs-3"></i>
                                                 <div>
