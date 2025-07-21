@@ -35,93 +35,93 @@
             {{-- User / Team List --}}
             <div class="flex-grow-1 overflow-y-auto">
                 @if ($activeTab === 'users')
-    @forelse($this->users as $user)
-        <div wire:click="selectUser({{ $user->id }})"
-            class="user-container d-flex align-items-center justify-content-between px-3 py-2 border-bottom {{ $selectedUser && $selectedUser->id === $user->id ? 'bg-default-app' : '' }}"
-            style="cursor: pointer; border-top: 1px solid #059669">
+                    @forelse($this->users as $user)
+                        <div wire:click="selectUser({{ $user->id }})"
+                            class="user-container d-flex align-items-center justify-content-between px-3 py-2 border-bottom {{ $selectedUser && $selectedUser->id === $user->id ? 'bg-default-app' : '' }}"
+                            style="cursor: pointer; border-top: 1px solid #059669">
 
-            {{-- Left: Avatar + Name + Message Preview --}}
-            <div class="d-flex align-items-center gap-3" style="width: 80%;">
-                {{-- Avatar + Online Dot --}}
-                <div class="position-relative">
-                    <img src="{{ 'https://ui-avatars.com/api/?name=' . urlencode($user->name) }}"
-                        class="rounded-circle" width="45" height="45">
-                    <span
-                        class="position-absolute bottom-0 end-0 translate-middle p-1 border border-white rounded-circle"
-                        style="background-color: {{ $user->is_online ? '#16a34a' : '#f97316' }}; width: 10px; height: 10px;">
-                    </span>
-                </div>
+                            {{-- Left: Avatar + Name + Message Preview --}}
+                            <div class="d-flex align-items-center gap-3" style="width: 80%;">
+                                {{-- Avatar + Online Dot --}}
+                                <div class="position-relative">
+                                    <img src="{{ 'https://ui-avatars.com/api/?name=' . urlencode($user->name) }}"
+                                        class="rounded-circle" width="45" height="45">
+                                    <span
+                                        class="position-absolute bottom-0 end-0 translate-middle p-1 border border-white rounded-circle"
+                                        style="background-color: {{ $user->is_online ? '#16a34a' : '#f97316' }}; width: 10px; height: 10px;">
+                                    </span>
+                                </div>
 
-                {{-- Name + Latest Message --}}
-                <div class="d-flex flex-column">
-                    <div class="fw-semibold">{{ $user->name }}</div>
+                                {{-- Name + Latest Message --}}
+                                <div class="d-flex flex-column">
+                                    <div class="fw-semibold">{{ $user->name }}</div>
 
-                    @foreach($user->receivedMessages as $message)
-                        <div class="text-muted small text-truncate" style="max-width: 200px;">
-                            {{ \Illuminate\Support\Str::limit($message->message, 30) }}
+                                    @foreach ($user->receivedMessages as $message)
+                                        <div class="text-muted small text-truncate" style="max-width: 200px;">
+                                            {{ \Illuminate\Support\Str::limit($message->message, 30) }}
+                                        </div>
+                                    @endforeach
+                                </div>
+                            </div>
+
+                            {{-- Right: Time + Unread Count --}}
+                            <div class="text-end">
+                                @if ($user->latestMessageWithAuth)
+                                @endif
+
+                                @foreach ($user->receivedMessages as $message)
+                                    <div class="text-muted small">
+                                        {{ $message->created_at->format('g:i a') }}
+                                    </div>
+                                @endforeach
+
+                                @if ($user->unread_count > 0)
+                                    <span class="badge bg-success rounded-pill">{{ $user->unread_count }}</span>
+                                @endif
+                            </div>
                         </div>
-                    @endforeach
-                </div>
-            </div>
-
-            {{-- Right: Time + Unread Count --}}
-            <div class="text-end">
-                @if ($user->latestMessageWithAuth)
-                @endif
-                
-                @foreach($user->receivedMessages as $message)
-                    <div class="text-muted small">
-                        {{ $message->created_at->format('g:i a') }}
-                    </div>
-                @endforeach
-
-                @if ($user->unread_count > 0)
-                    <span class="badge bg-success rounded-pill">{{ $user->unread_count }}</span>
-                @endif
-            </div>
-        </div>
-    @empty
-        <div class="text-muted text-center p-3">No users found.</div>
-    @endforelse
+                    @empty
+                        <div class="text-muted text-center p-3">No users found.</div>
+                    @endforelse
                 @else
                     @forelse($this->teams as $team)
-    <div wire:click="openTeamChat({{ $team->id }})"
-        class="user-container d-flex align-items-center justify-content-between px-3 py-2 border-bottom {{ $selectedChat && $selectedChat->team_id === $team->id ? 'bg-default-app' : '' }}"
-        style="cursor: pointer; border-top: 1px solid #059669">
+                        <div wire:click="openTeamChat({{ $team->id }})"
+                            class="user-container d-flex align-items-center justify-content-between px-3 py-2 border-bottom {{ $selectedChat && $selectedChat->team_id === $team->id ? 'bg-default-app' : '' }}"
+                            style="cursor: pointer; border-top: 1px solid #059669">
 
-        <div class="d-flex flex-column gap-1" style="width: 80%;">
-            <div class="fw-semibold d-flex align-items-center gap-2">
-                <i class="fa fa-users text-success"></i> {{ $team->name }}
-            </div>
+                            <div class="d-flex flex-column gap-1" style="width: 80%;">
+                                <div class="fw-semibold d-flex align-items-center gap-2">
+                                    <i class="fa fa-users text-success"></i> {{ $team->name }}
+                                </div>
 
-            @if ($team->latestMessage)
-                <div class="text-muted small text-truncate" style="max-width: 200px;">
-                    @if ($team->latestMessage->user_id === auth()->id())
-                        You: 
-                    @else
-                        {{ $team->latestMessage->user->name }}: 
-                    @endif
+                                @if ($team->latestMessage)
+                                    <div class="text-muted small text-truncate" style="max-width: 200px;">
+                                        @if ($team->latestMessage->user_id === auth()->id())
+                                            You:
+                                        @else
+                                            {{ $team->latestMessage->user->name }}:
+                                        @endif
 
-                    {{ \Illuminate\Support\Str::limit($team->latestMessage->message, 30) }}
-                </div>
-            @endif
-        </div>
+                                        {{ \Illuminate\Support\Str::limit($team->latestMessage->message, 30) }}
+                                    </div>
+                                @endif
+                            </div>
 
-        <div class="text-end">
-            @if ($team->latestMessage)
-                <div class="text-muted small">
-                    {{ $team->latestMessage->created_at->format('g:i a') }}
-                </div>
-            @endif
+                            <div class="text-end">
+                                @if ($team->latestMessage)
+                                    <div class="text-muted small">
+                                        {{ $team->latestMessage->created_at->format('g:i a') }}
+                                    </div>
+                                @endif
 
-            @if ($team->unread_count > 0)
-                <span class="badge bg-danger rounded-pill">{{ $team->unread_count }}</span>
-            @endif
-        </div>
-    </div>
-@empty
-    <div class="text-muted text-center p-3">No teams found.</div>
-@endforelse
+                                @if ($team->unread_count > 0)
+                                    <span class="badge bg-danger rounded-pill">{{ $team->unread_count }}</span>
+                                @endif
+                            </div>
+                        </div>
+                    @empty
+                        <div class="text-muted text-center p-3">No teams found.</div>
+                    @endforelse
 
                 @endif
             </div>
@@ -194,28 +194,28 @@
 
             {{-- chat user/team name + notifications --}}
             <div class="d-flex align-items-center gap-2">
-               @if ($selectedChat)
-    <!-- Left: Avatar + Name (User or Team) -->
-    <div class="d-flex align-items-center gap-2">
-        @if ($selectedChat->team_id)
-            <i class="fa fa-users text-success fs-4"></i>
-            <div class="fw-semibold">{{ $selectedChat->team->name }}</div>
-        @elseif (isset($selectedUser))
-            <img src="{{ 'https://ui-avatars.com/api/?name=' . urlencode($selectedUser->name) }}"
-                alt="Avatar" class="rounded-circle" width="40" height="40">
-            <div>
-                <div class="fw-semibold">{{ $selectedUser->name }}</div>
-                <div class="d-flex align-items-center gap-1">
-                    <span class="rounded-circle"
-                        style="width: 8px; height: 8px; background-color: {{ $selectedUser->is_online ? '#22c55e' : '#f97316' }};"></span>
-                    <small class="text-muted">
-                        {{ $selectedUser->is_online ? 'Online' : 'Offline' }}
-                    </small>
-                </div>
-            </div>
-        @endif
-    </div>
-@endif
+                @if ($selectedChat)
+                    <!-- Left: Avatar + Name (User or Team) -->
+                    <div class="d-flex align-items-center gap-2">
+                        @if ($selectedChat->team_id)
+                            <i class="fa fa-users text-success fs-4"></i>
+                            <div class="fw-semibold">{{ $selectedChat->team->name }}</div>
+                        @elseif (isset($selectedUser))
+                            <img src="{{ 'https://ui-avatars.com/api/?name=' . urlencode($selectedUser->name) }}"
+                                alt="Avatar" class="rounded-circle" width="40" height="40">
+                            <div>
+                                <div class="fw-semibold">{{ $selectedUser->name }}</div>
+                                <div class="d-flex align-items-center gap-1">
+                                    <span class="rounded-circle"
+                                        style="width: 8px; height: 8px; background-color: {{ $selectedUser->is_online ? '#22c55e' : '#f97316' }};"></span>
+                                    <small class="text-muted">
+                                        {{ $selectedUser->is_online ? 'Online' : 'Offline' }}
+                                    </small>
+                                </div>
+                            </div>
+                        @endif
+                    </div>
+                @endif
             </div>
 
             <!-- notifi + delete chat  -->
@@ -285,8 +285,7 @@
                             style="top: 100%; right: 0; z-index: 1000; display: block; min-width: 180px;">
 
                             @if ($selectedChat->team_id)
-                                <a href="{{ url('admin/teams/' . $selectedChat->team_id) }}"
-                                    class="dropdown-item">
+                                <a href="{{ url('admin/teams/' . $selectedChat->team_id) }}" class="dropdown-item">
                                     <i class="fa fa-eye me-1 text-primary"></i> View Team
                                 </a>
                             @endif
@@ -344,8 +343,7 @@
                         @endphp
 
                         {{-- Message Bubble --}}
-                        <div
-                            wire:key="msg-{{ $msg->id }}"
+                        <div wire:key="msg-{{ $msg->id }}"
                             class="d-flex mb-2 {{ $msg->user_id === auth()->id() ? 'justify-content-end' : 'justify-content-start' }}">
                             <div class="position-relative px-3 py-2 rounded"
                                 style="max-width: 70%; background-color: {{ $msg->user_id === auth()->id() ? '#dcf8c6' : '#f1f0f0' }};"
@@ -408,27 +406,32 @@
                                                         class="btn btn-sm btn-outline-success-app mt-1">Open</a>
                                                 </div>
                                             </div>
-
                                         @elseif($extension === 'mp3' || $extension === 'm4a')
-                                            <div x-data="audioPlayer('{{ $fileUrl }}')" class="d-flex align-items-center gap-2 p-2 bg-white rounded shadow-sm" style="width: 250px;">
-                                                <button @click="toggle()" class="btn btn-sm btn-outline-primary rounded-circle" style="width: 32px; height: 32px;">
+                                            <div x-data="audioPlayer('{{ $fileUrl }}')"
+                                                class="d-flex align-items-center gap-2 p-2 bg-white rounded shadow-sm"
+                                                style="width: 250px;">
+                                                <button @click="toggle()"
+                                                    class="btn btn-sm btn-outline-primary rounded-circle"
+                                                    style="width: 32px; height: 32px;">
                                                     <i :class="playing ? 'fa-pause' : 'fa-play'" class="fa-solid"></i>
                                                 </button>
 
                                                 <div class="flex-grow-1">
                                                     <div class="progress mb-1" style="height: 4px;">
-                                                        <div class="progress-bar bg-success" role="progressbar" :style="{ width: progress + '%' }"></div>
+                                                        <div class="progress-bar bg-success" role="progressbar"
+                                                            :style="{ width: progress + '%' }"></div>
                                                     </div>
-                                                    <div class="d-flex justify-content-between small text-muted" style="font-size: 10px;">
+                                                    <div class="d-flex justify-content-between small text-muted"
+                                                        style="font-size: 10px;">
                                                         <span x-text="currentTimeDisplay">0:00</span>
                                                         <span x-text="durationDisplay">0:00</span>
                                                     </div>
                                                 </div>
 
-                                                <audio x-ref="audio" :src="src" preload="metadata"></audio>
+                                                <audio x-ref="audio" :src="src"
+                                                    preload="metadata"></audio>
                                             </div>
-
-                                            @else
+                                        @else
                                             <div class="d-flex align-items-center gap-2">
                                                 <i class="fa-solid fa-file text-secondary fs-3"></i>
                                                 <div>
@@ -461,9 +464,8 @@
 
 
                                 {{-- Delete Button --}}
-                                 @if ($isMine)
-                                    <button
-                                        x-data
+                                @if ($isMine)
+                                    <button x-data
                                         @click.prevent="
                                             Swal.fire({
                                                 title: 'Are you sure?',
@@ -480,8 +482,7 @@
                                             });
                                         "
                                         class="btn btn-sm btn-danger btn-circle delete-btn position-absolute top-0 end-0 mt-1 me-1 d-none"
-                                        style="padding: 2px 6px; font-size: 10px;" title="Delete"
-                                    >
+                                        style="padding: 2px 6px; font-size: 10px;" title="Delete">
                                         ×
                                     </button>
                                 @endif
@@ -574,22 +575,45 @@
                     </div>
                 @endif
 
+                {{-- 📎 FILE INPUT, EMOJI PICKER & MESSAGE INPUT --}}
+                <div x-data="{ show: false }" class="d-flex align-items-center gap-2 w-100 position-relative">
 
-                {{-- File Upload Input --}}
-                <div class="d-flex align-items-center gap-2">
+                    {{-- 📎 Attachment --}}
                     <label class="btn btn-outline-secondary btn-sm mb-0">
                         <i class="fa-solid fa-paperclip"></i>
                         <input type="file" wire:model="mediaFiles" multiple hidden>
                     </label>
 
-                    <input type="text" wire:model="newMessage" class="form-control me-2"
+                    <!-- Emoji Toggle Button -->
+                    <button type="button" @click="show = !show" class="btn btn-outline-secondary btn-sm mb-0">
+                        😊
+                    </button>
+
+                    {{-- 🧠 Text Input --}}
+                    <input type="text" wire:model.defer="newMessage" class="form-control"
                         placeholder="Type your message..." />
 
+                    {{-- ✈️ Submit --}}
                     <button wire:loading.attr="disabled" wire:target="mediaFiles" class="btn btn-primary"
                         type="submit">
                         <i class="fa-solid fa-paper-plane"></i>
                     </button>
+
+                    <!-- Emoji Picker -->
+                    <div x-show="show" @click.outside="show = false"
+                        class="position-absolute bottom-100 mb-2 bg-white border rounded shadow p-2 z-10"
+                        style="max-height: 200px; overflow-y: auto; width: 250px;">
+                        @foreach (['😀', '😁', '😂', '🤣', '😃', '😄', '😅', '😆', '😉', '😊', '😍', '😘', '😗', '😜', '🤪', '😎', '🤩', '🥳', '😏', '😒', '😞', '😔', '😢', '😭', '😤', '😡', '🤔', '🤨', '😐', '😶', '🙄', '😴', '😷', '🤐', '🤯', '😬', '💪', '👏', '🙌', '🙏', '👍', '👎', '👌', '🤝', '🤙', '🖐️', '❤️', '💔', '💖', '💘', '💕', '💞', '🎉', '🎊', '🎁', '🎈', '✨', '💥', '🔥', '🌟', '🐶', '🐱', '🦁', '🐯', '🐰', '🐼', '🐸', '🍎', '🍌', '🍇', '🍓', '🍕', '🍔', '🍟', '🌮', '🍩', '🍪', '🌞', '🌛', '🌍', '🌈', '☔', '⚡'] as $emoji)
+                            <button type="button" class="btn btn-light btn-sm m-1"
+                                wire:click="appendEmoji('{{ $emoji }}')">
+                                {{ $emoji }}
+                            </button>
+                        @endforeach
+                    </div>
+
                 </div>
+
+
 
                 {{-- Error and Uploading --}}
                 @error('mediaFiles.*')
@@ -606,65 +630,65 @@
 </div>
 
 @push('scripts')
-        <script>
-    function audioPlayer(src) {
-        return {
-            src,
-            playing: false,
-            progress: 0,
-            currentTimeDisplay: '0:00',
-            durationDisplay: '0:00',
+    <script>
+        function audioPlayer(src) {
+            return {
+                src,
+                playing: false,
+                progress: 0,
+                currentTimeDisplay: '0:00',
+                durationDisplay: '0:00',
 
-            toggle() {
-                const audio = this.$refs.audio;
+                toggle() {
+                    const audio = this.$refs.audio;
 
-                // Pause all other players
-                document.querySelectorAll('audio').forEach(el => {
-                    if (el !== audio) {
-                        el.pause();
-                        el.currentTime = 0;
+                    // Pause all other players
+                    document.querySelectorAll('audio').forEach(el => {
+                        if (el !== audio) {
+                            el.pause();
+                            el.currentTime = 0;
 
-                        // update play button icons manually
-                        const wrapper = el.closest('[x-data]');
-                        if (wrapper && wrapper.__x) {
-                            wrapper.__x.$data.playing = false;
-                            wrapper.__x.$data.progress = 0;
-                            wrapper.__x.$data.currentTimeDisplay = '0:00';
+                            // update play button icons manually
+                            const wrapper = el.closest('[x-data]');
+                            if (wrapper && wrapper.__x) {
+                                wrapper.__x.$data.playing = false;
+                                wrapper.__x.$data.progress = 0;
+                                wrapper.__x.$data.currentTimeDisplay = '0:00';
+                            }
                         }
+                    });
+
+                    if (audio.paused) {
+                        audio.play();
+                        this.playing = true;
+                    } else {
+                        audio.pause();
+                        this.playing = false;
                     }
-                });
 
-                if (audio.paused) {
-                    audio.play();
-                    this.playing = true;
-                } else {
-                    audio.pause();
-                    this.playing = false;
+                    audio.ontimeupdate = () => {
+                        this.progress = (audio.currentTime / audio.duration) * 100;
+                        this.currentTimeDisplay = this.formatTime(audio.currentTime);
+                    };
+
+                    audio.onloadedmetadata = () => {
+                        this.durationDisplay = this.formatTime(audio.duration);
+                    };
+
+                    audio.onended = () => {
+                        this.playing = false;
+                        this.progress = 0;
+                        this.currentTimeDisplay = '0:00';
+                    };
+                },
+
+                formatTime(seconds) {
+                    const m = Math.floor(seconds / 60);
+                    const s = Math.floor(seconds % 60);
+                    return `${m}:${s < 10 ? '0' : ''}${s}`;
                 }
-
-                audio.ontimeupdate = () => {
-                    this.progress = (audio.currentTime / audio.duration) * 100;
-                    this.currentTimeDisplay = this.formatTime(audio.currentTime);
-                };
-
-                audio.onloadedmetadata = () => {
-                    this.durationDisplay = this.formatTime(audio.duration);
-                };
-
-                audio.onended = () => {
-                    this.playing = false;
-                    this.progress = 0;
-                    this.currentTimeDisplay = '0:00';
-                };
-            },
-
-            formatTime(seconds) {
-                const m = Math.floor(seconds / 60);
-                const s = Math.floor(seconds % 60);
-                return `${m}:${s < 10 ? '0' : ''}${s}`;
-            }
-        };
-    }
+            };
+        }
 
         function scrollToBottom() {
             const chatBox = document.getElementById('chat-box');

@@ -340,6 +340,11 @@ class ChatPanel extends Component
         $this->mediaFiles = array_values($this->mediaFiles); // reindex
     }
 
+    public function appendEmoji($emoji)
+    {
+        $this->newMessage .= $emoji;
+    }
+
     public function sendMessage()
     {
         if (empty($this->newMessage) && count($this->mediaFiles) === 0) {

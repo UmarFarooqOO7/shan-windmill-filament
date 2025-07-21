@@ -74,6 +74,12 @@ class Lead extends Model
         return $this->belongsToMany(Team::class, 'leads_teams');
     }
 
+    public function images()
+    {
+        return $this->hasMany(LeadImage::class);
+    }
+
+
     /**
      * Get all status change approval requests for this lead
      */

@@ -310,6 +310,13 @@ class LeadForm
                                         ->columnSpanFull(),
                                 ]),
                         ]),
+
+                        Forms\Components\Tabs\Tab::make('Documents & Images')
+                        ->schema([
+                            Forms\Components\View::make('livewire.lead-documents')
+                                ->label('Document Manager')
+                                ->columnSpanFull(),
+                        ]),
                 ])
                 ->contained(true)
                 ->columnSpanFull()
