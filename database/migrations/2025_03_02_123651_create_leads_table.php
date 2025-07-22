@@ -28,6 +28,7 @@ return new class extends Migration
             $table->string('status')->nullable();
             $table->string('setout')->nullable();
             $table->string('writ')->nullable();
+            $table->json('documents')->nullable();
 
 
 

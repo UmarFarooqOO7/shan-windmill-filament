@@ -41,8 +41,14 @@ class Lead extends Model
         'time_en',
         'locs',
         'amount_cleared',
-        'amount_owed'
+        'amount_owed',
+        'documents',
     ];
+    
+    protected $casts = [
+        'documents' => 'array',
+    ];
+
 
     public function status(): BelongsTo
     {
@@ -72,11 +78,6 @@ class Lead extends Model
     public function teams()
     {
         return $this->belongsToMany(Team::class, 'leads_teams');
-    }
-
-    public function images()
-    {
-        return $this->hasMany(LeadImage::class);
     }
 
 

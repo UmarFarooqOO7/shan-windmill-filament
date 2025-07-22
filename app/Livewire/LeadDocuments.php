@@ -1,58 +1,48 @@
 <?php
 
 namespace App\Livewire;
+
 use Livewire\Component;
-use Livewire\WithFileUploads;
 use App\Models\Lead;
-use App\Models\LeadImage;
-use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 
 class LeadDocuments extends Component
 {
-    use WithFileUploads;
-
     public $lead;
-    public $leadId;
     public $documents = [];
 
+    public function mount($lead)
+    {
+        $leadModel = Lead::find($lead);
+        $this->lead = $leadModel;
+        $this->documents = $leadModel?->documents ?? [];
+    }
 
 
 
-public function mount($leadId)
-{
-    Log::info('Mounting LeadDocuments with Lead ID:', ['leadId' => $leadId]);
 
-    $this->leadId = $leadId;
-    $this->lead = \App\Models\Lead::findOrFail($leadId);
+    public function removeDocument($index)
+        {
+            // Get the file path from the documents array
+            $file = $this->documents[$index] ?? null;
+
+            if (!$file) return;
+
+            // Delete file from storage (public disk)
+            Storage::disk('public')->delete($file);
+
+            // Remove from documents array
+            unset($this->documents[$index]);
+
+            // Re-index the array
+            $this->documents = array_values($this->documents);
+
+            // Save back to DB
+            $this->lead->update([
+                'documents' => $this->documents,
+            ]);
 }
 
-
-    public function upload()
-    {
-        $this->validate([
-            'documents.*' => 'file|max:10240|mimes:jpg,jpeg,png,pdf,doc,docx',
-        ]);
-
-        foreach ($this->documents as $file) {
-            $path = $file->store('lead_documents');
-
-            LeadImage::create([
-                'lead_id' => $this->lead->id,
-                'file_name' => $file->getClientOriginalName(),
-                'file_path' => $path,
-            ]);
-        }
-
-        $this->documents = [];
-        session()->flash('message', 'Files uploaded successfully.');
-    }
-
-    public function deleteDocument($id)
-    {
-        $document = LeadImage::findOrFail($id);
-        Storage::delete($document->file_path);
-        $document->delete();
-    }
 
     public function render()
     {

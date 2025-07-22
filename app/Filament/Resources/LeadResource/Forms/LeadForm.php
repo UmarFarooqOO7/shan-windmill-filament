@@ -15,6 +15,7 @@ use Filament\Forms\Components\Grid; // To control layout within repeater
 use Filament\Support\Enums\Alignment; // For aligning action button
 use Filament\Forms\Get;
 use Filament\Forms\Set;
+use Filament\Forms\Components\FileUpload;
 
 class LeadForm
 {
@@ -311,12 +312,27 @@ class LeadForm
                                 ]),
                         ]),
 
-                        Forms\Components\Tabs\Tab::make('Documents & Images')
-                        ->schema([
-                            Forms\Components\View::make('livewire.lead-documents')
-                                ->label('Document Manager')
-                                ->columnSpanFull(),
-                        ]),
+                    Forms\Components\Tabs\Tab::make('Documents')
+                    ->schema([
+                        Forms\Components\FileUpload::make('documents')
+                            ->label('Upload Documents')
+                            ->multiple()
+                            ->disk('public')
+                            ->preserveFilenames()
+                            ->directory('lead_documents')
+                            ->acceptedFileTypes(['application/pdf', 'image/*', '.doc', '.docx'])
+                            ->columnSpanFull(),
+
+
+                        Forms\Components\View::make('components.lead-documents-tab')
+                        ->viewData(function (Forms\Get $get) {
+                            $leadId = $get('id');
+                            return [
+                                'record' => $leadId ? \App\Models\Lead::find($leadId) : null,
+                            ];
+                        }),
+                    ]),
+
                 ])
                 ->contained(true)
                 ->columnSpanFull()

@@ -153,6 +153,12 @@ class LeadTable
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true)
                     ->visible($isAdmin),
+                TextColumn::make('documents')
+                    ->label('Documents Count')
+                    ->formatStateUsing(fn($state) => is_array($state) ? count($state) . ' file(s)' : '0')
+                    ->sortable()
+                    ->toggleable(),
+
                 // Financial information (admin only)
                 TextColumn::make('amount_owed')
                     ->label('Amount Owed')

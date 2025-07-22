@@ -15,6 +15,7 @@
         "laravel/tinker": "^2.10.1",
         "livewire/livewire": "^3.6",
         "saade/filament-fullcalendar": "^3.2",
+        "spatie/laravel-medialibrary": "^11.13",
         "tomatophp/filament-users": "^2.0"
     },
     "require-dev": {
