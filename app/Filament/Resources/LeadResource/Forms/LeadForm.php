@@ -315,13 +315,17 @@ class LeadForm
                     Forms\Components\Tabs\Tab::make('Documents')
                     ->schema([
                         Forms\Components\FileUpload::make('documents')
-                            ->label('Upload Documents')
-                            ->multiple()
-                            ->disk('public')
-                            ->preserveFilenames()
-                            ->directory('lead_documents')
-                            ->acceptedFileTypes(['application/pdf', 'image/*', '.doc', '.docx'])
-                            ->columnSpanFull(),
+    ->label('Upload Documents')
+    ->multiple()
+    ->reorderable() // allows sorting + delete icons
+    ->imagePreviewHeight('200') // fix image preview issue
+    ->disk('public')
+    ->preserveFilenames()
+    ->directory('lead_documents')
+    ->acceptedFileTypes(['application/pdf', 'image/*', '.doc', '.docx'])
+    ->enableDownload() // optional: show download icon
+    ->enableOpen()     // optional: click to open
+    ->columnSpanFull(),
 
 
                         Forms\Components\View::make('components.lead-documents-tab')
