@@ -10,6 +10,8 @@ use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 
 class AuthController extends Controller
@@ -109,39 +111,47 @@ class AuthController extends Controller
 
     public function forgotPassword(Request $request)
     {
-        $request->validate(['email' => 'required|email|exists:users']);
-
-        $status = Password::sendResetLink(
-            $request->only('email')
-        );
-
-        return $status === Password::RESET_LINK_SENT
-            ? response()->json(['message' => 'Reset link sent to email.'])
-            : response()->json(['message' => 'Unable to send reset link.'], 500);
-    }
-
-    public function resetPassword(Request $request)
-    {
         $request->validate([
-            'token' => 'required',
-            'email' => 'required|email',
-            'password' => 'required|string|min:6|confirmed',
+            'email' => 'required|email|exists:users,email',
         ]);
 
-        $status = Password::reset(
-            $request->only('email', 'password', 'password_confirmation', 'token'),
-            function ($user, $password) {
-                $user->forceFill([
-                    'password' => Hash::make($password),
-                    'remember_token' => Str::random(60),
-                ])->save();
+        $otp = random_int(100000, 999999);
 
-                event(new PasswordReset($user));
-            }
-        );
+        // Store OTP in cache for 5 minutes (300 seconds)
+        Cache::put('otp_' . $request->email, $otp, now()->addSeconds(300));
 
-        return $status == Password::PASSWORD_RESET
-            ? response()->json(['message' => 'Password reset successful.'])
-            : response()->json(['message' => __($status)], 500);
+        // Send email manually
+        Mail::raw("Your OTP code is: $otp", function ($message) use ($request) {
+            $message->to($request->email)
+                ->subject('Password Reset OTP');
+        });
+
+        return response()->json(['message' => 'OTP sent to email']);
     }
+
+    public function verifyOtpAndReset(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email|exists:users,email',
+            'otp' => 'required|digits:6',
+            'password' => 'required|confirmed|min:8',
+        ]);
+
+        $cachedOtp = Cache::get('otp_' . $request->email);
+
+        if (!$cachedOtp || $cachedOtp != $request->otp) {
+            return response()->json(['message' => 'Invalid or expired OTP'], 400);
+        }
+
+        // OTP verified, reset password
+        $user = User::where('email', $request->email)->first();
+        $user->password = Hash::make($request->password);
+        $user->save();
+
+        // Invalidate OTP
+        Cache::forget('otp_' . $request->email);
+
+        return response()->json(['message' => 'Password reset successfully']);
+    }
+
 }
