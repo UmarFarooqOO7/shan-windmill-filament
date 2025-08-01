@@ -36,12 +36,12 @@ class AuthController extends Controller
         // Generate access token
         $token = $user->createToken('auth_token')->plainTextToken;
 
-        return response()->json([
-            'message' => 'Registered successfully. Please check your email to verify your account.',
+        return $this->success([
             'access_token' => $token,
             'token_type' => 'Bearer',
-            'user' => $user
-        ]);
+            'user' => $user,
+        ], 'Registered successfully. Please check your email to verify your account.');
+
     }
 
     public function login(Request $request)
@@ -54,31 +54,31 @@ class AuthController extends Controller
         $user = User::where('email', $request->email)->first();
 
         if (! $user || ! Hash::check($request->password, $user->password)) {
-            return response()->json(['message' => 'Invalid credentials'], 401);
+            return $this->error('Invalid credentials.', 401);
         }
 
         if (! $user->hasVerifiedEmail()) {
-            return response()->json(['message' => 'Email not verified.'], 403);
+            return $this->error('Email not verified..', 403);
         }
 
         $token = $user->createToken('auth_token')->plainTextToken;
 
-        return response()->json([
+       return $this->success([
             'access_token' => $token,
             'token_type' => 'Bearer',
         ]);
+
     }
 
     public function logout(Request $request)
     {
         $request->user()->currentAccessToken()->delete();
-
-        return response()->json(['message' => 'Logged out']);
+        return $this->success([], 'Logged out');
     }
 
     public function user(Request $request)
     {
-        return response()->json($request->user());
+        return $this->success($request->user(), 'User');
     }
 
     public function resendVerificationEmail(Request $request)
@@ -89,7 +89,8 @@ class AuthController extends Controller
 
         $request->user()->sendEmailVerificationNotification();
 
-        return response()->json(['message' => 'Verification email resent.']);
+        return $this->success([],'Verification email resent.');
+
     }
 
     public function verifyEmail(Request $request, $id, $hash)
@@ -97,16 +98,16 @@ class AuthController extends Controller
         $user = User::findOrFail($id);
 
         if (! hash_equals((string) $hash, sha1($user->getEmailForVerification()))) {
-            return response()->json(['message' => 'Invalid verification link.'], 403);
+            return $this->error('Invalid verification link.', 403);
         }
 
         if ($user->hasVerifiedEmail()) {
-            return response()->json(['message' => 'Email already verified.']);
+            return $this->success([],'Email already verified.');
         }
 
         $user->markEmailAsVerified();
+        return $this->success([],'Email verified successfully.');
 
-        return response()->json(['message' => 'Email verified successfully.']);
     }
 
     public function forgotPassword(Request $request)
@@ -126,7 +127,8 @@ class AuthController extends Controller
                 ->subject('Password Reset OTP');
         });
 
-        return response()->json(['message' => 'OTP sent to email']);
+        return $this->success([],'OTP sent to email');
+
     }
 
     public function verifyOtpAndReset(Request $request)
@@ -140,7 +142,8 @@ class AuthController extends Controller
         $cachedOtp = Cache::get('otp_' . $request->email);
 
         if (!$cachedOtp || $cachedOtp != $request->otp) {
-            return response()->json(['message' => 'Invalid or expired OTP'], 400);
+            return $this->error('Invalid or expired OTP', 403);
+
         }
 
         // OTP verified, reset password
@@ -151,7 +154,8 @@ class AuthController extends Controller
         // Invalidate OTP
         Cache::forget('otp_' . $request->email);
 
-        return response()->json(['message' => 'Password reset successfully']);
+        return $this->success([],'Password reset successfully');
+
     }
 
 }
