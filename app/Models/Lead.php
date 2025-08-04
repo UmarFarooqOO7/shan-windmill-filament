@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use App\Models\Event;
 use App\Models\Invoice; // Add this line
+use Illuminate\Support\Facades\Storage;
 
 class Lead extends Model
 {
@@ -44,6 +45,21 @@ class Lead extends Model
         'amount_owed',
         'documents',
     ];
+
+    // Append custom attribute to JSON
+    protected $appends = ['full_documents'];
+
+    // Original stored value: just file names/paths like 'lead_documents/file.pdf'
+    public function getFullDocumentsAttribute()
+    {
+        if (!$this->documents || !is_array($this->documents)) {
+            return [];
+        }
+
+        return collect($this->documents)->map(function ($doc) {
+            return Storage::url($doc); // returns `storage/lead_documents/...`
+        })->toArray();
+    }
     
     protected $casts = [
         'documents' => 'array',
