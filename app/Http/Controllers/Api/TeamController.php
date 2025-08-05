@@ -21,4 +21,16 @@ class TeamController extends Controller
         return $this->success($teams, 'Teams fetched successfully');
 
     }
+
+    public function show(Team $team)
+    {
+        $team->load([
+            'members:id,name,email',       // Customize as needed
+            'parent:id,name',
+            'subTeams:id,name,team_id'
+        ]);
+
+        return $this->success($team, 'Team details fetched successfully.');
+    }
+
 }

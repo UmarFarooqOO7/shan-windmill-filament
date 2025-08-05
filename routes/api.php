@@ -2,7 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\{AuthController,TeamController};
-use App\Http\Controllers\Api\LeadController;
+use App\Http\Controllers\Api\{LeadController,ChatController};
 
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
@@ -25,6 +25,16 @@ Route::middleware('auth:sanctum')->group(function () {
 Route::middleware(['auth:sanctum', 'verified'])->group(function () {
     // teams
     Route::get('/teams', [TeamController::class, 'index']);
+    Route::get('/teams/{team}', [TeamController::class, 'show']);
     // leads
     Route::apiResource('leads', LeadController::class);
+
+    // chat
+    Route::get('/chat/teams', [ChatController::class, 'chattedTeams']);
+    Route::get('/chat/users', [ChatController::class, 'chattedUsers']);
+    Route::get('chat/all_users', [ChatController::class, 'getAllUsers']);
+    Route::get('chat/all_teams', [ChatController::class, 'getAllTeams']);
+    Route::post('/chat/{chatId}/send-message', [ChatController::class, 'sendMessage']);
+    Route::delete('/message/{id}', [ChatController::class, 'deleteMessage']);
+    Route::delete('/chat/{chatId}/delete', [ChatController::class, 'deleteChat']);
 });
