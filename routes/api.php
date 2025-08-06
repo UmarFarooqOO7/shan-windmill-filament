@@ -34,7 +34,11 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
     Route::get('/chat/users', [ChatController::class, 'chattedUsers']);
     Route::get('chat/all_users', [ChatController::class, 'getAllUsers']);
     Route::get('chat/all_teams', [ChatController::class, 'getAllTeams']);
+
+    Route::get('/chat/team/{teamId}', [ChatController::class, 'teamChat']);
+    Route::get('/chat/user/{userId}', [ChatController::class, 'userChat']);
+
     Route::post('/chat/{chatId}/send-message', [ChatController::class, 'sendMessage']);
-    Route::delete('/message/{id}', [ChatController::class, 'deleteMessage']);
+    Route::delete('chat/message/{id}', [ChatController::class, 'deleteMessage']);
     Route::delete('/chat/{chatId}/delete', [ChatController::class, 'deleteChat']);
 });
