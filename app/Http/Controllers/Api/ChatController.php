@@ -38,7 +38,14 @@ class ChatController extends Controller
             ->orderByDesc('unread_count')
             ->get();
 
-        return $this->success($teams,' chats Teams');
+            $notifications = $this->getUnreadChatNotifications();
+
+            return $this->success([
+                'teams' => $teams,
+                'notifications' => $notifications['notifications'],
+                'unread_count' => $notifications['count'],
+            ], 'Chats Teams');
+
     }
 
     public function chattedUsers(Request $request)
@@ -70,8 +77,35 @@ class ChatController extends Controller
             ->orderBy('name')
             ->get();
 
-        return $this->success($users, 'Chats users');
+        $notifications = $this->getUnreadChatNotifications();
+
+        return $this->success([
+            'users' => $users,
+            'notifications' => $notifications['notifications'],
+            'unread_count' => $notifications['count'],
+        ], 'Chats Users');
     } 
+
+    protected function getUnreadChatNotifications()
+    {
+        $user = auth()->user();
+
+        $notifications = $user->unreadNotifications()
+            ->whereNotNull('data->chat_type')
+            ->latest()
+            ->limit(5)
+            ->get();
+
+        $count = $user->unreadNotifications()
+            ->whereNotNull('data->chat_type')
+            ->count();
+
+        return [
+            'count' => $count,
+            'notifications' => $notifications
+        ];
+    }
+
 
     public function getAllUsers(Request $request)
     {
@@ -254,5 +288,50 @@ class ChatController extends Controller
 
         return $this->success([], 'Chat deleted for you');
     }
+
+     public function markAllNotificationsAsRead(Request $request)
+    {
+        $user = $request->user();
+
+        if ($user->unreadNotifications->isEmpty()) {
+            return $this->success([], 'No unread notifications');
+        }
+
+        $user->unreadNotifications->markAsRead();
+
+        return $this->success([], 'All notifications marked as read');
+    }
+
+    public function markNotificationAsRead(Request $request, $id)
+    {
+        $user = $request->user();
+        $notification = $user->unreadNotifications()->where('id', $id)->first();
+
+        if (!$notification) {
+            return $this->error([],'Notification not found', 404);
+        }
+
+        $notification->markAsRead();
+        $data = $notification->data;
+
+        // if (!isset($data['chat_type']) || !isset($data['chat_id'])) {
+        //     return $this->error([],'Invalid notification data', 422);
+        // }
+
+        // $chatController = new ChatController();
+
+        // // If Team Chat
+        // if ($data['chat_type'] === 'team') {
+        //     return $chatController->teamChat($request, $data['team_id'] ?? null);
+        // }
+
+        // // If User Chat
+        // if ($data['chat_type'] === 'user' && isset($data['sender_id'])) {
+        //     return $chatController->userChat($request, $data['sender_id']);
+        // }
+
+        return $this->success([],'Notification mark as read');
+    }
+
 
 }
