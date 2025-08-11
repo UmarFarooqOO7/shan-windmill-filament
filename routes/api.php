@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\{AuthController,TeamController};
 use App\Http\Controllers\Api\{LeadController,ChatController};
+use App\Http\Controllers\Api\GoogleAuthController;
 
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
@@ -44,4 +45,14 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
 
     Route::post('chat/notifications/{id}/mark-read', [ChatController::class, 'markNotificationAsRead']);
     Route::post('/chat/markAllNotificationsAsRead', [ChatController::class, 'markAllNotificationsAsRead']);
+
+
+    Route::get('/google-auth', [GoogleAuthController::class, 'redirect']);
+    Route::post('/google-disconnect', [GoogleAuthController::class, 'disconnect']);
+    
+    Route::get('/calendar', [GoogleAuthController::class, 'viewCalendar']);
+    Route::post('/google-calendar/event', [GoogleAuthController::class, 'createEvent']);
+    Route::put('/google-calendar/update/{googleEventId}', [GoogleAuthController::class, 'updateGoogleEvent']);
+    Route::delete('google-calendar/event', [GoogleAuthController::class, 'deleteGoogleEvent']);
 });
+Route::get('/google-callback', [GoogleAuthController::class, 'callback'])->name('google.callbackapi');
