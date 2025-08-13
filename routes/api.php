@@ -3,7 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\{AuthController,TeamController};
 use App\Http\Controllers\Api\{LeadController,ChatController};
-use App\Http\Controllers\Api\GoogleAuthController;
+use App\Http\Controllers\Api\{GoogleAuthController,DashboardController};
 
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
@@ -47,12 +47,19 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
     Route::post('/chat/markAllNotificationsAsRead', [ChatController::class, 'markAllNotificationsAsRead']);
 
 
+    // google calendor con/dis
     Route::get('/google-auth', [GoogleAuthController::class, 'redirect']);
     Route::post('/google-disconnect', [GoogleAuthController::class, 'disconnect']);
     
+    // calendar events crud
     Route::get('/calendar', [GoogleAuthController::class, 'viewCalendar']);
     Route::post('/google-calendar/event', [GoogleAuthController::class, 'createEvent']);
-    Route::put('/google-calendar/update/{googleEventId}', [GoogleAuthController::class, 'updateGoogleEvent']);
+    Route::put('/google-calendar/update/{googleEventId}', [GoogleAuthController::class, 'updateEvent']);
     Route::delete('google-calendar/event', [GoogleAuthController::class, 'deleteGoogleEvent']);
+
+    // dashboard
+    Route::get('lead-stats', [DashboardController::class, 'index']);
+    Route::get('status-stats', [DashboardController::class, 'statusStats']);
+
 });
 Route::get('/google-callback', [GoogleAuthController::class, 'callback'])->name('google.callbackapi');
